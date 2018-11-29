@@ -151,8 +151,8 @@ type Config struct {
 	Logger log.Logger `toml:",omitempty"`
 }
 
-// Server manages all peer connections.
-type Server struct {
+// p2pServer manages all peer connections.
+type p2pServer struct {
 	// Config fields may not be modified while the server is running.
 	Config
 
@@ -187,6 +187,10 @@ type Server struct {
 	loopWG        sync.WaitGroup // loop, listenLoop
 	peerFeed      event.Feed
 	log           log.Logger
+}
+
+func NewServer(cfg Config) *Server {
+	return WrapServer(&p2pServer{Config: cfg})
 }
 
 type peerOpFunc func(map[enode.ID]*Peer)
@@ -282,7 +286,7 @@ func (c *conn) set(f connFlag, val bool) {
 }
 
 // Peers returns all connected peers.
-func (srv *Server) Peers() []*Peer {
+func (srv *p2pServer) Peers() []*Peer {
 	var ps []*Peer
 	select {
 	// Note: We'd love to put this function into a variable but
@@ -300,7 +304,7 @@ func (srv *Server) Peers() []*Peer {
 }
 
 // PeerCount returns the number of connected peers.
-func (srv *Server) PeerCount() int {
+func (srv *p2pServer) PeerCount() int {
 	var count int
 	select {
 	case srv.peerOp <- func(ps map[enode.ID]*Peer) { count = len(ps) }:
@@ -313,7 +317,7 @@ func (srv *Server) PeerCount() int {
 // AddPeer connects to the given node and maintains the connection until the
 // server is shut down. If the connection fails for any reason, the server will
 // attempt to reconnect the peer.
-func (srv *Server) AddPeer(node *enode.Node) {
+func (srv *p2pServer) AddPeer(node *enode.Node) {
 	select {
 	case srv.addstatic <- node:
 	case <-srv.quit:
@@ -321,7 +325,7 @@ func (srv *Server) AddPeer(node *enode.Node) {
 }
 
 // RemovePeer disconnects from the given node
-func (srv *Server) RemovePeer(node *enode.Node) {
+func (srv *p2pServer) RemovePeer(node *enode.Node) {
 	select {
 	case srv.removestatic <- node:
 	case <-srv.quit:
@@ -330,7 +334,7 @@ func (srv *Server) RemovePeer(node *enode.Node) {
 
 // AddTrustedPeer adds the given node to a reserved whitelist which allows the
 // node to always connect, even if the slot are full.
-func (srv *Server) AddTrustedPeer(node *enode.Node) {
+func (srv *p2pServer) AddTrustedPeer(node *enode.Node) {
 	select {
 	case srv.addtrusted <- node:
 	case <-srv.quit:
@@ -338,7 +342,7 @@ func (srv *Server) AddTrustedPeer(node *enode.Node) {
 }
 
 // RemoveTrustedPeer removes the given node from the trusted peer set.
-func (srv *Server) RemoveTrustedPeer(node *enode.Node) {
+func (srv *p2pServer) RemoveTrustedPeer(node *enode.Node) {
 	select {
 	case srv.removetrusted <- node:
 	case <-srv.quit:
@@ -346,12 +350,12 @@ func (srv *Server) RemoveTrustedPeer(node *enode.Node) {
 }
 
 // SubscribePeers subscribes the given channel to peer events
-func (srv *Server) SubscribeEvents(ch chan *PeerEvent) event.Subscription {
+func (srv *p2pServer) SubscribeEvents(ch chan *PeerEvent) event.Subscription {
 	return srv.peerFeed.Subscribe(ch)
 }
 
 // Self returns the local node's endpoint information.
-func (srv *Server) Self() *enode.Node {
+func (srv *p2pServer) Self() *enode.Node {
 	srv.lock.Lock()
 	ln := srv.localnode
 	srv.lock.Unlock()
@@ -364,7 +368,7 @@ func (srv *Server) Self() *enode.Node {
 
 // Stop terminates the server and all active peer connections.
 // It blocks until all active connections have been closed.
-func (srv *Server) Stop() {
+func (srv *p2pServer) Stop() {
 	srv.lock.Lock()
 	if !srv.running {
 		srv.lock.Unlock()
@@ -408,7 +412,7 @@ func (s *sharedUDPConn) Close() error {
 
 // Start starts running the server.
 // Servers can not be re-used after stopping.
-func (srv *Server) Start() (err error) {
+func (srv *p2pServer) Start() (err error) {
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
 	if srv.running {
@@ -463,7 +467,7 @@ func (srv *Server) Start() (err error) {
 	return nil
 }
 
-func (srv *Server) setupLocalNode() error {
+func (srv *p2pServer) setupLocalNode() error {
 	// Create the devp2p handshake.
 	pubkey := crypto.FromECDSAPub(&srv.PrivateKey.PublicKey)
 	srv.ourHandshake = &protoHandshake{Version: baseProtocolVersion, Name: srv.Name, ID: pubkey[1:]}
@@ -508,7 +512,7 @@ func (srv *Server) setupLocalNode() error {
 	return nil
 }
 
-func (srv *Server) setupDiscovery() error {
+func (srv *p2pServer) setupDiscovery() error {
 	if srv.NoDiscovery && !srv.DiscoveryV5 {
 		return nil
 	}
@@ -570,7 +574,7 @@ func (srv *Server) setupDiscovery() error {
 	return nil
 }
 
-func (srv *Server) setupListening() error {
+func (srv *p2pServer) setupListening() error {
 	// Launch the TCP listener.
 	listener, err := net.Listen("tcp", srv.ListenAddr)
 	if err != nil {
@@ -602,7 +606,7 @@ type dialer interface {
 	removeStatic(*enode.Node)
 }
 
-func (srv *Server) run(dialstate dialer) {
+func (srv *p2pServer) run(dialstate dialer) {
 	srv.log.Info("Started P2P networking", "self", srv.localnode.Node())
 	defer srv.loopWG.Done()
 	defer srv.nodedb.Close()
@@ -780,7 +784,7 @@ running:
 	}
 }
 
-func (srv *Server) protoHandshakeChecks(peers map[enode.ID]*Peer, inboundCount int, c *conn) error {
+func (srv *p2pServer) protoHandshakeChecks(peers map[enode.ID]*Peer, inboundCount int, c *conn) error {
 	// Drop connections with no matching protocols.
 	if len(srv.Protocols) > 0 && countMatchingProtocols(srv.Protocols, c.caps) == 0 {
 		return DiscUselessPeer
@@ -790,7 +794,7 @@ func (srv *Server) protoHandshakeChecks(peers map[enode.ID]*Peer, inboundCount i
 	return srv.encHandshakeChecks(peers, inboundCount, c)
 }
 
-func (srv *Server) encHandshakeChecks(peers map[enode.ID]*Peer, inboundCount int, c *conn) error {
+func (srv *p2pServer) encHandshakeChecks(peers map[enode.ID]*Peer, inboundCount int, c *conn) error {
 	switch {
 	case !c.is(trustedConn|staticDialedConn) && len(peers) >= srv.MaxPeers:
 		return DiscTooManyPeers
@@ -805,10 +809,10 @@ func (srv *Server) encHandshakeChecks(peers map[enode.ID]*Peer, inboundCount int
 	}
 }
 
-func (srv *Server) maxInboundConns() int {
+func (srv *p2pServer) maxInboundConns() int {
 	return srv.MaxPeers - srv.maxDialedConns()
 }
-func (srv *Server) maxDialedConns() int {
+func (srv *p2pServer) maxDialedConns() int {
 	if srv.NoDiscovery || srv.NoDial {
 		return 0
 	}
@@ -821,7 +825,7 @@ func (srv *Server) maxDialedConns() int {
 
 // listenLoop runs in its own goroutine and accepts
 // inbound connections.
-func (srv *Server) listenLoop() {
+func (srv *p2pServer) listenLoop() {
 	defer srv.loopWG.Done()
 	srv.log.Debug("TCP listener up", "addr", srv.listener.Addr())
 
@@ -880,7 +884,7 @@ func (srv *Server) listenLoop() {
 // SetupConn runs the handshakes and attempts to add the connection
 // as a peer. It returns when the connection has been added as a peer
 // or the handshakes have failed.
-func (srv *Server) SetupConn(fd net.Conn, flags connFlag, dialDest *enode.Node) error {
+func (srv *p2pServer) SetupConn(fd net.Conn, flags connFlag, dialDest *enode.Node) error {
 	c := &conn{fd: fd, transport: srv.newTransport(fd), flags: flags, cont: make(chan error)}
 	err := srv.setupConn(c, flags, dialDest)
 	if err != nil {
@@ -890,7 +894,7 @@ func (srv *Server) SetupConn(fd net.Conn, flags connFlag, dialDest *enode.Node) 
 	return err
 }
 
-func (srv *Server) setupConn(c *conn, flags connFlag, dialDest *enode.Node) error {
+func (srv *p2pServer) setupConn(c *conn, flags connFlag, dialDest *enode.Node) error {
 	// Prevent leftover pending conns from entering the handshake.
 	srv.lock.Lock()
 	running := srv.running
@@ -971,7 +975,7 @@ func truncateName(s string) string {
 
 // checkpoint sends the conn to run, which performs the
 // post-handshake checks for the stage (posthandshake, addpeer).
-func (srv *Server) checkpoint(c *conn, stage chan<- *conn) error {
+func (srv *p2pServer) checkpoint(c *conn, stage chan<- *conn) error {
 	select {
 	case stage <- c:
 	case <-srv.quit:
@@ -988,7 +992,7 @@ func (srv *Server) checkpoint(c *conn, stage chan<- *conn) error {
 // runPeer runs in its own goroutine for each peer.
 // it waits until the Peer logic returns and removes
 // the peer.
-func (srv *Server) runPeer(p *Peer) {
+func (srv *p2pServer) runPeer(p *Peer) {
 	if srv.newPeerHook != nil {
 		srv.newPeerHook(p)
 	}
@@ -1030,7 +1034,7 @@ type NodeInfo struct {
 }
 
 // NodeInfo gathers and returns a collection of metadata known about the host.
-func (srv *Server) NodeInfo() *NodeInfo {
+func (srv *p2pServer) NodeInfo() *NodeInfo {
 	// Gather and assemble the generic node infos
 	node := srv.Self()
 	info := &NodeInfo{
@@ -1061,7 +1065,7 @@ func (srv *Server) NodeInfo() *NodeInfo {
 }
 
 // PeersInfo returns an array of metadata objects describing connected peers.
-func (srv *Server) PeersInfo() []*PeerInfo {
+func (srv *p2pServer) PeersInfo() []*PeerInfo {
 	// Gather all the generic and sub-protocol specific infos
 	infos := make([]*PeerInfo, 0, srv.PeerCount())
 	for _, peer := range srv.Peers() {

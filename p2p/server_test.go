@@ -68,14 +68,14 @@ func (c *testTransport) close(err error) {
 	c.closeErr = err
 }
 
-func startTestServer(t *testing.T, remoteKey *ecdsa.PublicKey, pf func(*Peer)) *Server {
+func startTestServer(t *testing.T, remoteKey *ecdsa.PublicKey, pf func(*Peer)) *p2pServer {
 	config := Config{
 		Name:       "test",
 		MaxPeers:   10,
 		ListenAddr: "127.0.0.1:0",
 		PrivateKey: newkey(),
 	}
-	server := &Server{
+	server := &p2pServer{
 		Config:       config,
 		newPeerHook:  pf,
 		newTransport: func(fd net.Conn) transport { return newTestTransport(remoteKey, fd) },
@@ -226,7 +226,7 @@ func TestServerTaskScheduling(t *testing.T) {
 	// The Server in this test isn't actually running
 	// because we're only interested in what run does.
 	db, _ := enode.OpenDB("")
-	srv := &Server{
+	srv := &p2pServer{
 		Config:    Config{MaxPeers: 10},
 		localnode: enode.NewLocalNode(db, newkey()),
 		nodedb:    db,
@@ -275,7 +275,7 @@ func TestServerManyTasks(t *testing.T) {
 
 	var (
 		db, _ = enode.OpenDB("")
-		srv   = &Server{
+		srv   = &p2pServer{
 			quit:      make(chan struct{}),
 			localnode: enode.NewLocalNode(db, newkey()),
 			nodedb:    db,
@@ -344,7 +344,7 @@ type testTask struct {
 	called bool
 }
 
-func (t *testTask) Do(srv *Server) {
+func (t *testTask) Do(srv *p2pServer) {
 	t.called = true
 }
 
@@ -354,7 +354,7 @@ func (t *testTask) Do(srv *Server) {
 func TestServerAtCap(t *testing.T) {
 	trustedNode := newkey()
 	trustedID := enode.PubkeyToIDV4(&trustedNode.PublicKey)
-	srv := &Server{
+	srv := &p2pServer{
 		Config: Config{
 			PrivateKey:   newkey(),
 			MaxPeers:     10,
@@ -428,7 +428,7 @@ func TestServerPeerLimits(t *testing.T) {
 		},
 	}
 
-	srv := &Server{
+	srv := &p2pServer{
 		Config: Config{
 			PrivateKey: srvkey,
 			MaxPeers:   0,
@@ -541,7 +541,7 @@ func TestServerSetupConn(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		srv := &Server{
+		srv := &p2pServer{
 			Config: Config{
 				PrivateKey: srvkey,
 				MaxPeers:   10,
