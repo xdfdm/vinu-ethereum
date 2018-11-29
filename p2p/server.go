@@ -1083,3 +1083,20 @@ func (srv *p2pServer) PeersInfo() []*PeerInfo {
 	}
 	return infos
 }
+
+// AddProtocols appends the protocols supported
+// by the server. Matching protocols are launched for
+// each peer.
+func (srv *p2pServer) AddProtocols(protocols ...Protocol) {
+	srv.Protocols = append(srv.Protocols, protocols...)
+}
+
+// GetConfig returns server config
+func (srv *p2pServer) GetConfig() *Config {
+	return &srv.Config
+}
+
+// GetDiscV5 returns discV5 Network
+func (srv *p2pServer) GetDiscV5() *discv5.Network {
+	return srv.DiscV5
+}
