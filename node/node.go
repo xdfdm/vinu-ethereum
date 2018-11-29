@@ -162,7 +162,9 @@ func (n *Node) Start() error {
 	if n.serverConfig.NodeDatabase == "" {
 		n.serverConfig.NodeDatabase = n.config.NodeDB()
 	}
-	running := &p2p.Server{Config: n.serverConfig}
+
+	// TODO: choose between p2p.NewServer() and lachesis.NewServer() here
+	running := p2p.NewServer(n.serverConfig)
 	n.log.Info("Starting peer-to-peer node", "instance", n.serverConfig.Name)
 
 	// Otherwise copy and specialize the P2P configuration
@@ -191,7 +193,7 @@ func (n *Node) Start() error {
 	}
 	// Gather the protocols and start the freshly assembled P2P server
 	for _, service := range services {
-		running.Protocols = append(running.Protocols, service.Protocols()...)
+		running.AddProtocols(service.Protocols()...)
 	}
 	if err := running.Start(); err != nil {
 		return convertFileLockError(err)
