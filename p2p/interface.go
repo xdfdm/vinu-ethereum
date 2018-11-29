@@ -6,6 +6,10 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/enode"
 )
 
+/*
+ * Interface
+ */
+
 type ServerInterface interface {
 	// Start starts running the server.
 	// Servers can not be re-used after stopping.
@@ -48,6 +52,14 @@ type ServerInterface interface {
 
 	// GetDiscV5 returns discV5 Network if set
 	GetDiscV5() *discv5.Network
+}
+
+/*
+ * Wrapper
+ */
+
+func NewServer(cfg Config) *Server {
+	return WrapServer(&p2pServer{Config: cfg})
 }
 
 // Server is struct wrapper for ServerInterface.
@@ -130,4 +142,25 @@ func (s *Server) PeersInfo() []*PeerInfo {
 // each peer.
 func (s *Server) AddProtocols(protocols ...Protocol) {
 	s.I.AddProtocols(protocols...)
+}
+
+/*
+ * ServerImplementation
+ */
+
+// AddProtocols appends the protocols supported
+// by the server. Matching protocols are launched for
+// each peer.
+func (srv *p2pServer) AddProtocols(protocols ...Protocol) {
+	srv.Protocols = append(srv.Protocols, protocols...)
+}
+
+// GetConfig returns server config
+func (srv *p2pServer) GetConfig() *Config {
+	return &srv.Config
+}
+
+// GetDiscV5 returns discV5 Network
+func (srv *p2pServer) GetDiscV5() *discv5.Network {
+	return srv.DiscV5
 }

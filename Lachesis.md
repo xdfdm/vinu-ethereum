@@ -14,5 +14,4 @@ Ethereum over lachesis network and consensus.
 ## Changes
 
 * Rename p2p.Server to p2p.p2pServer;
-* Create p2p/interface.go with p2p.ServerInterface and p2p.Server struct;
-* p2p.p2pServer implements p2p.ServerInterface;
+* Create p2p/interface.go: p2p.ServerInterface, p2p.Server struct, p2p.p2pServer's additionals methods;
