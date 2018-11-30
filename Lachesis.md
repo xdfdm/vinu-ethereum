@@ -9,6 +9,7 @@ It should be in the same local path as original: `$GOPATH/src/github.com/ethereu
 ## Aim
 
 Ethereum over lachesis network and consensus.
+Full ethereum stack and lachesis performance.
 
 
 ## Changes

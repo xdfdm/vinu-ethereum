@@ -2,9 +2,12 @@ package lachesis
 
 import (
 	"encoding/hex"
+	"errors"
 	"net"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/discv5"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -32,25 +35,64 @@ type lachesisServer struct {
 	// Config fields may not be modified while the server is running.
 	p2p.Config
 
-	peers []*p2p.Peer
+	lock    sync.Mutex // protects running
+	running bool
+
+	peers    []*p2p.Peer
+	peerFeed event.Feed
+
+	log log.Logger
 }
 
 // Start starts running the server.
 // Servers can not be re-used after stopping.
 func (srv *lachesisServer) Start() error {
-	// TODO: implement
+	srv.lock.Lock()
+	defer srv.lock.Unlock()
+	if srv.running {
+		return errors.New("server already running")
+	}
+	srv.running = true
+
+	srv.log = srv.Config.Logger
+	if srv.log == nil {
+		srv.log = log.New()
+	}
+	// make fake peers
+	// peers should be sorted alphabetically by node identifier
+	// (or sort it when PeersInfo())
+	for i := 0; i < peerCount; i++ {
+		// TODO: replace p2p.Peer with custom to get it's private fields
+		/*p := newPeer(c, srv.Protocols)
+		// If message events are enabled, pass the peerFeed
+		// to the peer
+		if srv.EnableMsgEvents {
+			p.events = &srv.peerFeed
+		}
+		name := truncateName(c.name)
+		srv.log.Debug("Adding fake peer", "name", name, "addr", c.fd.RemoteAddr(), "peers", len(srv.peers)+1)
+		go srv.runPeer(p)
+		srv.peers = append(srv.peers, p)
+		*/
+	}
+
 	return nil
 }
 
 // Stop terminates the server and all active peer connections.
 // It blocks until all active connections have been closed.
 func (srv *lachesisServer) Stop() {
-	// TODO: implement
+	srv.lock.Lock()
+	if !srv.running {
+		srv.lock.Unlock()
+		return
+	}
+	srv.running = false
 }
 
 // NodeInfo gathers and returns a collection of metadata known about the host.
 func (srv *lachesisServer) NodeInfo() *p2p.NodeInfo {
-	// Gather and assemble the generic node infos
+	// Gather and assemble the generic fake node infos
 	node := enode.NewV4(&srv.PrivateKey.PublicKey, net.ParseIP("0.0.0.0"), 0, 0)
 	info := &p2p.NodeInfo{
 		Name:       srv.Name,
@@ -81,8 +123,7 @@ func (srv *lachesisServer) NodeInfo() *p2p.NodeInfo {
 
 // SubscribePeers subscribes the given channel to peer events.
 func (srv *lachesisServer) SubscribeEvents(ch chan *p2p.PeerEvent) event.Subscription {
-	// TODO: implement
-	return nil
+	return srv.peerFeed.Subscribe(ch)
 }
 
 // AddPeer connects to the given node and maintains the connection until the
@@ -111,8 +152,15 @@ func (srv *lachesisServer) PeerCount() int {
 
 // PeersInfo returns an array of metadata objects describing connected peers.
 func (srv *lachesisServer) PeersInfo() []*p2p.PeerInfo {
-	// TODO: implement
-	return make([]*p2p.PeerInfo, 0)
+	// Gather all the generic and sub-protocol specific infos
+	infos := make([]*p2p.PeerInfo, 0, srv.PeerCount())
+	for _, peer := range srv.peers {
+		if peer != nil {
+			infos = append(infos, peer.Info())
+		}
+	}
+
+	return infos
 }
 
 // AddProtocols appends the protocols supported
@@ -130,4 +178,39 @@ func (srv *lachesisServer) GetConfig() *p2p.Config {
 // GetDiscV5 returns nil anyway
 func (srv *lachesisServer) GetDiscV5() *discv5.Network {
 	return nil
+}
+
+/*
+ * staff
+ */
+
+// runPeer runs in its own goroutine for each peer.
+// it waits until the Peer logic returns and removes
+// the peer.
+func (srv *lachesisServer) runPeer(p *p2p.Peer) {
+	// broadcast peer add
+	srv.peerFeed.Send(&p2p.PeerEvent{
+		Type: p2p.PeerEventTypeAdd,
+		Peer: p.ID(),
+	})
+
+	// run the protocol
+	var err error
+	/*
+		remoteRequested, err := p.run()
+	*/
+
+	// broadcast peer drop
+	srv.peerFeed.Send(&p2p.PeerEvent{
+		Type:  p2p.PeerEventTypeDrop,
+		Peer:  p.ID(),
+		Error: err.Error(),
+	})
+}
+
+func truncateName(s string) string {
+	if len(s) > 20 {
+		return s[:20] + "..."
+	}
+	return s
 }
