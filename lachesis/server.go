@@ -3,6 +3,8 @@ package lachesis
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"io"
 	"net"
 	"sync"
 
@@ -12,10 +14,19 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/discv5"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/rlp"
+
+	"github.com/Fantom-foundation/go-lachesis/src/proxy"
 )
 
 const (
 	peerCount = 5 // see eth.minDesiredPeerCount
+)
+
+var (
+	// available protocol
+	caps = []p2p.Cap{
+		{Name: "eth", Version: 62},
+	}
 )
 
 /*
@@ -30,13 +41,16 @@ func NewServer(cfg p2p.Config) *p2p.Server {
  * p2p.ServerInterface implementation
  */
 
-// lachesisServer manages other peers over lachesis.
+// lachesisServer simulates other peers by lachesis.
 type lachesisServer struct {
 	// Config fields may not be modified while the server is running.
 	p2p.Config
 
 	lock    sync.Mutex // protects running
 	running bool
+
+	// TODO: set instanse
+	lachesis proxy.LachesisProxy
 
 	peers    []*p2p.Peer
 	peerFeed event.Feed
@@ -58,24 +72,31 @@ func (srv *lachesisServer) Start() error {
 	if srv.log == nil {
 		srv.log = log.New()
 	}
+
 	// make fake peers
 	// peers should be sorted alphabetically by node identifier
 	// (or sort it when PeersInfo())
 	for i := 0; i < peerCount; i++ {
-		// TODO: replace p2p.Peer with custom to get it's private fields
-		/*p := newPeer(c, srv.Protocols)
-		// If message events are enabled, pass the peerFeed
-		// to the peer
-		if srv.EnableMsgEvents {
-			p.events = &srv.peerFeed
+		// TODO: make peers ID and Name
+		id := enode.ID{}
+		name := fmt.Sprintf("node-%d", i)
+		peer := p2p.NewPeer(id, name, caps)
+		srv.log.Debug("Adding fake peer", "name", name, "peers", len(srv.peers)+1)
+		srv.peers = append(srv.peers, peer)
+		// broadcast peer add
+		srv.peerFeed.Send(&p2p.PeerEvent{
+			Type: p2p.PeerEventTypeAdd,
+			Peer: peer.ID(),
+		})
+		// and run protocols
+		for _, cap := range caps {
+			for _, proto := range srv.Protocols {
+				if proto.Name == cap.Name && proto.Version == cap.Version {
+					srv.startProtocol(peer, &proto)
+				}
+			}
 		}
-		name := truncateName(c.name)
-		srv.log.Debug("Adding fake peer", "name", name, "addr", c.fd.RemoteAddr(), "peers", len(srv.peers)+1)
-		go srv.runPeer(p)
-		srv.peers = append(srv.peers, p)
-		*/
 	}
-
 	return nil
 }
 
@@ -87,6 +108,15 @@ func (srv *lachesisServer) Stop() {
 		srv.lock.Unlock()
 		return
 	}
+
+	for _, peer := range srv.peers {
+		// broadcast peer drop
+		srv.peerFeed.Send(&p2p.PeerEvent{
+			Type: p2p.PeerEventTypeDrop,
+			Peer: peer.ID(),
+		})
+	}
+
 	srv.running = false
 }
 
@@ -184,28 +214,19 @@ func (srv *lachesisServer) GetDiscV5() *discv5.Network {
  * staff
  */
 
-// runPeer runs in its own goroutine for each peer.
-// it waits until the Peer logic returns and removes
-// the peer.
-func (srv *lachesisServer) runPeer(p *p2p.Peer) {
-	// broadcast peer add
-	srv.peerFeed.Send(&p2p.PeerEvent{
-		Type: p2p.PeerEventTypeAdd,
-		Peer: p.ID(),
-	})
-
-	// run the protocol
-	var err error
-	/*
-		remoteRequested, err := p.run()
-	*/
-
-	// broadcast peer drop
-	srv.peerFeed.Send(&p2p.PeerEvent{
-		Type:  p2p.PeerEventTypeDrop,
-		Peer:  p.ID(),
-		Error: err.Error(),
-	})
+func (srv *lachesisServer) startProtocol(peer *p2p.Peer, proto *p2p.Protocol) {
+	srv.log.Trace(fmt.Sprintf("Starting protocol %s/%d", proto.Name, proto.Version))
+	rw := newMsgEventer(srv, &srv.peerFeed, peer.ID(), proto.Name)
+	go func() {
+		err := proto.Run(peer, rw)
+		if err == nil {
+			srv.log.Trace(fmt.Sprintf("Protocol %s/%d returned", proto.Name, proto.Version))
+		} else if err != io.EOF {
+			srv.log.Trace(fmt.Sprintf("Protocol %s/%d failed", proto.Name, proto.Version), "err", err)
+		} else {
+			srv.log.Trace(fmt.Sprintf("Protocol %s/%d closed", proto.Name, proto.Version))
+		}
+	}()
 }
 
 func truncateName(s string) string {
