@@ -48,6 +48,7 @@ type lachesisServer struct {
 
 	lock    sync.Mutex // protects running
 	running bool
+	quit    chan struct{}
 
 	// TODO: set instanse
 	lachesis proxy.LachesisProxy
@@ -67,6 +68,7 @@ func (srv *lachesisServer) Start() error {
 		return errors.New("server already running")
 	}
 	srv.running = true
+	srv.quit = make(chan struct{})
 
 	srv.log = srv.Config.Logger
 	if srv.log == nil {
@@ -118,6 +120,7 @@ func (srv *lachesisServer) Stop() {
 	}
 
 	srv.running = false
+	close(srv.quit)
 }
 
 // NodeInfo gathers and returns a collection of metadata known about the host.

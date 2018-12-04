@@ -499,6 +499,10 @@ var (
 		Usage: "Network listening port",
 		Value: 30303,
 	}
+	LachesisAddrFlag = cli.StringFlag{
+		Name:  "lachesis",
+		Usage: "lachesis-node address",
+	}
 	BootnodesFlag = cli.StringFlag{
 		Name:  "bootnodes",
 		Usage: "Comma separated enode URLs for P2P discovery bootstrap (set v4+v5 instead for light servers)",
@@ -740,6 +744,9 @@ func setBootstrapNodesV5(ctx *cli.Context, cfg *p2p.Config) {
 func setListenAddress(ctx *cli.Context, cfg *p2p.Config) {
 	if ctx.GlobalIsSet(ListenPortFlag.Name) {
 		cfg.ListenAddr = fmt.Sprintf(":%d", ctx.GlobalInt(ListenPortFlag.Name))
+	}
+	if ctx.GlobalIsSet(LachesisAddrFlag.Name) {
+		cfg.LachesisAddr = ctx.GlobalString(LachesisAddrFlag.Name)
 	}
 }
 

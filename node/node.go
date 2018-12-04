@@ -30,6 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/internal/debug"
+	"github.com/ethereum/go-ethereum/lachesis"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -163,9 +164,14 @@ func (n *Node) Start() error {
 		n.serverConfig.NodeDatabase = n.config.NodeDB()
 	}
 
-	// TODO: choose between p2p.NewServer() and lachesis.NewServer() here
-	running := p2p.NewServer(n.serverConfig)
-	n.log.Info("Starting peer-to-peer node", "instance", n.serverConfig.Name)
+	var running *p2p.Server
+	if n.serverConfig.LachesisAddr == "" {
+		running = p2p.NewServer(n.serverConfig)
+		n.log.Info("Starting peer-to-peer node", "instance", n.serverConfig.Name)
+	} else {
+		running = lachesis.NewServer(n.serverConfig)
+		n.log.Info("Using lachesis node", "address", n.serverConfig.LachesisAddr)
+	}
 
 	// Otherwise copy and specialize the P2P configuration
 	services := make(map[reflect.Type]Service)
