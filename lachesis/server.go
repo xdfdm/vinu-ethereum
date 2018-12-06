@@ -49,6 +49,7 @@ type lachesisServer struct {
 	lock    sync.Mutex // protects running
 	running bool
 	quit    chan struct{}
+	wg      sync.WaitGroup
 
 	// TODO: set instanse
 	lachesis proxy.LachesisProxy
@@ -61,19 +62,25 @@ type lachesisServer struct {
 
 // Start starts running the server.
 // Servers can not be re-used after stopping.
-func (srv *lachesisServer) Start() error {
+func (srv *lachesisServer) Start() (err error) {
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
 	if srv.running {
 		return errors.New("server already running")
 	}
-	srv.running = true
-	srv.quit = make(chan struct{})
 
 	srv.log = srv.Config.Logger
 	if srv.log == nil {
 		srv.log = log.New()
 	}
+
+	srv.lachesis, err = proxy.NewGrpcLachesisProxy(srv.LachesisAddr, nil)
+	if err != nil {
+		return
+	}
+
+	srv.running = true
+	srv.quit = make(chan struct{})
 
 	// make fake peers
 	// peers should be sorted alphabetically by node identifier
@@ -99,7 +106,7 @@ func (srv *lachesisServer) Start() error {
 			}
 		}
 	}
-	return nil
+	return
 }
 
 // Stop terminates the server and all active peer connections.
@@ -119,8 +126,9 @@ func (srv *lachesisServer) Stop() {
 		})
 	}
 
-	srv.running = false
 	close(srv.quit)
+	srv.wg.Wait()
+	srv.running = false
 }
 
 // NodeInfo gathers and returns a collection of metadata known about the host.
@@ -220,7 +228,9 @@ func (srv *lachesisServer) GetDiscV5() *discv5.Network {
 func (srv *lachesisServer) startProtocol(peer *p2p.Peer, proto *p2p.Protocol) {
 	srv.log.Trace(fmt.Sprintf("Starting protocol %s/%d", proto.Name, proto.Version))
 	rw := newMsgEventer(srv, &srv.peerFeed, peer.ID(), proto.Name)
+	srv.wg.Add(1)
 	go func() {
+		defer srv.wg.Done()
 		err := proto.Run(peer, rw)
 		if err == nil {
 			srv.log.Trace(fmt.Sprintf("Protocol %s/%d returned", proto.Name, proto.Version))
