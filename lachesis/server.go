@@ -14,8 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/discv5"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/rlp"
-
-	"github.com/Fantom-foundation/go-lachesis/src/proxy"
 )
 
 const (
@@ -51,9 +49,6 @@ type lachesisServer struct {
 	quit    chan struct{}
 	wg      sync.WaitGroup
 
-	// TODO: set instanse
-	lachesis proxy.LachesisProxy
-
 	peers    []*p2p.Peer
 	peerFeed event.Feed
 
@@ -74,13 +69,12 @@ func (srv *lachesisServer) Start() (err error) {
 		srv.log = log.New()
 	}
 
-	srv.lachesis, err = proxy.NewGrpcLachesisProxy(srv.LachesisAddr, nil)
+	err = srv.Config.LachesisAdapter.Start()
 	if err != nil {
 		return
 	}
 
 	srv.running = true
-	srv.quit = make(chan struct{})
 
 	// make fake peers
 	// peers should be sorted alphabetically by node identifier
@@ -126,7 +120,8 @@ func (srv *lachesisServer) Stop() {
 		})
 	}
 
-	close(srv.quit)
+	srv.Config.LachesisAdapter.Stop()
+
 	srv.wg.Wait()
 	srv.running = false
 }
@@ -227,7 +222,7 @@ func (srv *lachesisServer) GetDiscV5() *discv5.Network {
 
 func (srv *lachesisServer) startProtocol(peer *p2p.Peer, proto *p2p.Protocol) {
 	srv.log.Trace(fmt.Sprintf("Starting protocol %s/%d", proto.Name, proto.Version))
-	rw := newMsgEventer(srv, &srv.peerFeed, peer.ID(), proto.Name)
+	rw := newMsgEventer(srv.Config.LachesisAdapter, &srv.peerFeed, peer.ID(), proto.Name)
 	srv.wg.Add(1)
 	go func() {
 		defer srv.wg.Done()

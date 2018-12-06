@@ -165,12 +165,12 @@ func (n *Node) Start() error {
 	}
 
 	var running *p2p.Server
-	if n.serverConfig.LachesisAddr == "" {
+	if n.serverConfig.LachesisAdapter == nil {
 		running = p2p.NewServer(n.serverConfig)
 		n.log.Info("Starting peer-to-peer node", "instance", n.serverConfig.Name)
 	} else {
 		running = lachesis.NewServer(n.serverConfig)
-		n.log.Info("Using lachesis node", "address", n.serverConfig.LachesisAddr)
+		n.log.Info("Using lachesis node", "address", n.serverConfig.LachesisAdapter.Address())
 	}
 
 	// Otherwise copy and specialize the P2P configuration

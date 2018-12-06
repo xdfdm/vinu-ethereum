@@ -7,8 +7,24 @@ import (
 )
 
 /*
- * Interface
+ * Interfaces
  */
+
+type LachesisAdapter interface {
+	Start() error
+	Stop()
+	Address() string
+	// ReadMsg returns a message.
+	// Can be called simultaneously from multiple goroutines.
+	ReadMsg() (Msg, error)
+	// WriteMsg sends a message. It will block until the message's
+	// Payload has been consumed by the other end.
+	// Can be called simultaneously from multiple goroutines.
+	//
+	// Note that messages can be sent only once because their
+	// payload reader is drained.
+	WriteMsg(Msg) error
+}
 
 type ServerInterface interface {
 	// Start starts running the server.

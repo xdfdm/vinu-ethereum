@@ -746,7 +746,7 @@ func setListenAddress(ctx *cli.Context, cfg *p2p.Config) {
 		cfg.ListenAddr = fmt.Sprintf(":%d", ctx.GlobalInt(ListenPortFlag.Name))
 	}
 	if ctx.GlobalIsSet(LachesisAddrFlag.Name) {
-		cfg.LachesisAddr = ctx.GlobalString(LachesisAddrFlag.Name)
+		cfg.LachesisAdapter = eth.NewLachesisAdapter(ctx.GlobalString(LachesisAddrFlag.Name), cfg.Logger)
 	}
 }
 

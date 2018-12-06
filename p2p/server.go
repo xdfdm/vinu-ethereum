@@ -131,8 +131,8 @@ type Config struct {
 	// the server is started.
 	ListenAddr string
 
-	// If LachesisAddr is set, the lachesis-node will be used instead of p2pServer
-	LachesisAddr string
+	// If LachesisAdapter is set, the lachesis-node will be used instead of p2pServer
+	LachesisAdapter LachesisAdapter
 
 	// If set to a non-nil value, the given NAT port mapper
 	// is used to make the listening port available to the
