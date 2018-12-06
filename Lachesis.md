@@ -36,7 +36,7 @@ Full ethereum stack and lachesis performance.
     - `nodeFlags` in **cmd/geth/main.go**;
     - `AppHelpFlagGroups` in **cmd/geth/usage.go**;
     - `app.Flags` in **cmd/swarm/main.go**;
-* Make `node.Node` create `.server` according to `.serverConfig.LachesisAddr` and use `p2p.Server.AddProtocols()` at `.Start()`:
+* Make `node.Node` create `.server` according to `.serverConfig.LachesisAdapter` and use `p2p.Server.AddProtocols()` at `.Start()`:
     ```
 	var running *p2p.Server
 	if n.serverConfig.LachesisAdapter == nil {
