@@ -1,10 +1,13 @@
 package eth
 
 import (
+	"bytes"
 	"io"
 
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/rlp"
 
 	"github.com/Fantom-foundation/go-lachesis/src/proxy"
 	"github.com/Fantom-foundation/go-lachesis/src/proxy/proto"
@@ -12,13 +15,13 @@ import (
 
 func NewLachesisAdapter(addr string, log log.Logger) p2p.LachesisAdapter {
 	return &lachesisAdapter{
-		Addr: addr,
+		addr: addr,
 		log:  log,
 	}
 }
 
 type lachesisAdapter struct {
-	Addr string
+	addr string
 
 	log log.Logger
 
@@ -33,7 +36,7 @@ type lachesisAdapter struct {
 func (srv *lachesisAdapter) Start() (err error) {
 	srv.quit = make(chan struct{})
 
-	srv.lachesis, err = proxy.NewGrpcLachesisProxy(srv.Addr, nil)
+	srv.lachesis, err = proxy.NewGrpcLachesisProxy(srv.addr, nil)
 	if err != nil {
 		return
 	}
@@ -46,7 +49,7 @@ func (srv *lachesisAdapter) Stop() {
 }
 
 func (srv *lachesisAdapter) Address() string {
-	return srv.Addr
+	return srv.addr
 }
 
 // ReadMsg returns a message.
@@ -93,8 +96,32 @@ func (srv *lachesisAdapter) WriteMsg(msg p2p.Msg) (err error) {
  */
 
 func blockConvert(c *proto.Commit, m *p2p.Msg) error {
+	// parse txs
+	var txs types.Transactions
+	for _, raw := range c.Block.Body.Transactions {
+		tx := &types.Transaction{}
+		err := tx.DecodeRLP(rlp.NewStream(bytes.NewReader(raw), uint64(len(raw))))
+		if err != nil {
+			return err
+		}
+		txs = append(txs, tx)
+	}
+
+	// make block
+	// TODO: fill all
+	header := &types.Header{}
+	var uncles []*types.Header
+	var receipts []*types.Receipt
+	block := types.NewBlock(header, txs, uncles, receipts)
+
+	// block to Msg
+	size, r, err := rlp.EncodeToReader(block)
+	if err != nil {
+		return err
+	}
 	m.Code = NewBlockMsg
-	// TODO: convert c.Block.Body.Transactions to m.Payload (eth Block)
-	m.Size = 0
+	m.Size = uint32(size)
+	m.Payload = r
+
 	return nil
 }
