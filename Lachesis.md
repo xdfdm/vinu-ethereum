@@ -31,6 +31,13 @@ Full ethereum stack and lachesis performance.
 			cfg.LachesisAdapter = eth.NewLachesisAdapter(ctx.GlobalString(LachesisAddrFlag.Name), cfg.Logger)
 		}
 	}
+	. . .
+	func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
+		. . .
+		if ctx.GlobalIsSet(LachesisAddrFlag.Name) {
+			cfg.Ethash.PowMode = ethash.ModeFake
+		}
+	}
     ```
 * Append `utils.LachesisAddrFlag` to:
     - `nodeFlags` in **cmd/geth/main.go**;
