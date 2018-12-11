@@ -17,13 +17,13 @@ import (
 )
 
 const (
-	peerCount = 5 // see eth.minDesiredPeerCount
+	peerCount = 1 // see eth.minDesiredPeerCount = 5
 )
 
 var (
 	// available protocol
 	caps = []p2p.Cap{
-		{Name: "eth", Version: 62},
+		{Name: "eth", Version: 63},
 	}
 )
 
@@ -80,11 +80,10 @@ func (srv *lachesisServer) Start() (err error) {
 	// peers should be sorted alphabetically by node identifier
 	// (or sort it when PeersInfo())
 	for i := 0; i < peerCount; i++ {
-		// TODO: make peers ID and Name
-		id := enode.ID{}
-		name := fmt.Sprintf("node-%d", i)
+		id := enode.HexID(fmt.Sprintf("%#064x", i))
+		name := fmt.Sprintf("fake-node-%d", i)
 		peer := p2p.NewPeer(id, name, caps)
-		srv.log.Debug("Adding fake peer", "name", name, "peers", len(srv.peers)+1)
+		srv.log.Debug("Fake peer created", "name", peer.Name(), "id", peer.ID())
 		srv.peers = append(srv.peers, peer)
 		// broadcast peer add
 		srv.peerFeed.Send(&p2p.PeerEvent{
@@ -221,7 +220,7 @@ func (srv *lachesisServer) GetDiscV5() *discv5.Network {
  */
 
 func (srv *lachesisServer) startProtocol(peer *p2p.Peer, proto *p2p.Protocol) {
-	srv.log.Trace(fmt.Sprintf("Starting protocol %s/%d", proto.Name, proto.Version))
+	srv.log.Debug(fmt.Sprintf("Starting protocol %s-%d for %s", proto.Name, proto.Version, peer.Name()))
 	rw := newMsgEventer(srv.Config.LachesisAdapter, &srv.peerFeed, peer.ID(), proto.Name)
 	srv.wg.Add(1)
 	go func() {

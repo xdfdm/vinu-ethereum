@@ -1,7 +1,7 @@
 package eth
 
 import (
-	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -20,10 +20,9 @@ func NewLachesisAdapter(addr string) p2p.LachesisAdapter {
 }
 
 type lachesisAdapter struct {
-	addr string
-
-	log log.Logger
-
+	addr     string
+	log      log.Logger
+	answers  chan *p2p.Msg
 	lachesis proxy.LachesisProxy
 	quit     chan struct{}
 }
@@ -36,6 +35,7 @@ func (srv *lachesisAdapter) Start(log log.Logger) (err error) {
 	srv.log = log
 	srv.log.Debug("lachesisAdapter.Start()")
 
+	srv.answers = make(chan *p2p.Msg, 5) // max peer count
 	srv.quit = make(chan struct{})
 
 	srv.lachesis, err = proxy.NewGrpcLachesisProxy(srv.addr, nil)
@@ -57,19 +57,28 @@ func (srv *lachesisAdapter) Address() string {
 // ReadMsg returns a message.
 // Can be called simultaneously from multiple goroutines.
 func (srv *lachesisAdapter) ReadMsg() (msg p2p.Msg, err error) {
-	srv.log.Debug("lachesisAdapter.ReadMsg")
-	// TODO: make it clever
-	select {
-	case <-srv.quit:
-		err = io.EOF
-	case c := <-srv.lachesis.CommitCh():
-		err = blockConvert(&c, &msg)
+	for {
+		select {
+		case <-srv.quit:
+			srv.log.Debug("lachesisAdapter.ReadMsg quit")
+			err = io.EOF
+			return
+		case m := <-srv.answers:
+			srv.log.Debug("lachesisAdapter.ReadMsg answer", "msg", msg)
+			msg = *m
+			err = nil
+			return
+		case c := <-srv.lachesis.CommitCh():
+			err = srv.blockConvert(&c, &msg)
+			if err == nil {
+				srv.log.Debug("lachesisAdapter.ReadMsg commit", "block", c.Block.Body)
+				return
+			} else {
+				srv.log.Warn("lachesisAdapter.ReadMsg commit", "block", c.Block.Body, "err", err)
+				continue
+			}
+		}
 	}
-
-	if err != nil {
-		srv.log.Error("ReadMsg", "Err", err)
-	}
-	return
 }
 
 // WriteMsg sends a message. It will block until the message's
@@ -79,36 +88,62 @@ func (srv *lachesisAdapter) ReadMsg() (msg p2p.Msg, err error) {
 // Note that messages can be sent only once because their
 // payload reader is drained.
 func (srv *lachesisAdapter) WriteMsg(msg p2p.Msg) (err error) {
-	srv.log.Debug("lachesisAdapter.WriteMsg", "msg", msg)
-	// TODO: make it clever
-	if msg.Code != TxMsg {
-		srv.log.Trace("WriteMsg", "Code", msg.Code)
+	switch msg.Code {
+
+	case StatusMsg:
+		srv.log.Debug("lachesisAdapter.WriteMsg handshake", "msg", msg)
+		srv.sendAnswer(&msg)
 		return nil
+
+	case TxMsg:
+		srv.log.Debug("lachesisAdapter.WriteMsg tx", "msg", msg)
+		var txs []*types.Transaction
+		if err := msg.Decode(&txs); err != nil {
+			return errResp(ErrDecode, "msg %v: %v", msg, err)
+		}
+		for _, tx := range txs {
+			buf, err := rlp.EncodeToBytes(tx)
+			if err != nil {
+				return err
+			}
+			err = srv.lachesis.SubmitTx(buf)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+
+	default:
+		srv.log.Debug("lachesisAdapter.WriteMsg skip", "code", msg.Code)
+		return nil
+
 	}
-	srv.log.Trace("WriteMsg", "Code", "TxMsg")
-	buf := make([]byte, msg.Size)
-	_, err = io.ReadFull(msg.Payload, buf)
-	if err != nil {
-		srv.log.Error("WriteMsg", "Err", err)
-		return
-	}
-	return srv.lachesis.SubmitTx(buf)
 }
 
 /*
  * staff
  */
 
-func blockConvert(c *proto.Commit, m *p2p.Msg) error {
+// sendAnswer sends data for ReadMsg()
+func (srv *lachesisAdapter) sendAnswer(msg *p2p.Msg) {
+	srv.answers <- msg
+}
+
+func (srv *lachesisAdapter) blockConvert(c *proto.Commit, m *p2p.Msg) error {
 	// parse txs
-	var txs types.Transactions
+	var txs []*types.Transaction
 	for _, raw := range c.Block.Body.Transactions {
 		tx := &types.Transaction{}
-		err := tx.DecodeRLP(rlp.NewStream(bytes.NewReader(raw), uint64(len(raw))))
+		err := rlp.DecodeBytes(raw, tx)
 		if err != nil {
-			return err
+			srv.log.Warn("invalid tx in Commit", "err", err)
+		} else {
+			txs = append(txs, tx)
 		}
-		txs = append(txs, tx)
+	}
+
+	if len(txs) < 1 {
+		return fmt.Errorf("no valid txs")
 	}
 
 	// make block
