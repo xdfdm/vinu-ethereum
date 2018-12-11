@@ -85,11 +85,6 @@ func (srv *lachesisServer) Start() (err error) {
 		peer := p2p.NewPeer(id, name, caps)
 		srv.log.Debug("Fake peer created", "name", peer.Name(), "id", peer.ID())
 		srv.peers = append(srv.peers, peer)
-		// broadcast peer add
-		srv.peerFeed.Send(&p2p.PeerEvent{
-			Type: p2p.PeerEventTypeAdd,
-			Peer: peer.ID(),
-		})
 		// and run protocols
 		for _, cap := range caps {
 			for _, proto := range srv.Protocols {
@@ -109,14 +104,6 @@ func (srv *lachesisServer) Stop() {
 	if !srv.running {
 		srv.lock.Unlock()
 		return
-	}
-
-	for _, peer := range srv.peers {
-		// broadcast peer drop
-		srv.peerFeed.Send(&p2p.PeerEvent{
-			Type: p2p.PeerEventTypeDrop,
-			Peer: peer.ID(),
-		})
 	}
 
 	srv.Config.LachesisAdapter.Stop()
@@ -224,14 +211,33 @@ func (srv *lachesisServer) startProtocol(peer *p2p.Peer, proto *p2p.Protocol) {
 	rw := newMsgEventer(srv.Config.LachesisAdapter, &srv.peerFeed, peer.ID(), proto.Name)
 	srv.wg.Add(1)
 	go func() {
+		// broadcast peer add
+		srv.peerFeed.Send(&p2p.PeerEvent{
+			Type: p2p.PeerEventTypeAdd,
+			Peer: peer.ID(),
+		})
+		// broadcast peer drop
+		defer srv.peerFeed.Send(&p2p.PeerEvent{
+			Type: p2p.PeerEventTypeDrop,
+			Peer: peer.ID(),
+		})
 		defer srv.wg.Done()
-		err := proto.Run(peer, rw)
-		if err == nil {
-			srv.log.Trace(fmt.Sprintf("Protocol %s/%d returned", proto.Name, proto.Version))
-		} else if err != io.EOF {
-			srv.log.Trace(fmt.Sprintf("Protocol %s/%d failed", proto.Name, proto.Version), "err", err)
-		} else {
-			srv.log.Trace(fmt.Sprintf("Protocol %s/%d closed", proto.Name, proto.Version))
+
+		for {
+			err := proto.Run(peer, rw)
+			if err == nil {
+				srv.log.Trace(fmt.Sprintf("Protocol %s/%d returned", proto.Name, proto.Version))
+			} else if err != io.EOF {
+				srv.log.Trace(fmt.Sprintf("Protocol %s/%d failed", proto.Name, proto.Version), "err", err)
+			} else {
+				srv.log.Trace(fmt.Sprintf("Protocol %s/%d closed", proto.Name, proto.Version))
+			}
+			select {
+			case <-srv.quit:
+				continue
+			default:
+				return
+			}
 		}
 	}()
 }

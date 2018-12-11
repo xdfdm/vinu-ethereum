@@ -3,6 +3,7 @@ package eth
 import (
 	"fmt"
 	"io"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
@@ -59,15 +60,18 @@ func (srv *lachesisAdapter) Address() string {
 func (srv *lachesisAdapter) ReadMsg() (msg p2p.Msg, err error) {
 	for {
 		select {
+
 		case <-srv.quit:
 			srv.log.Debug("lachesisAdapter.ReadMsg quit")
 			err = io.EOF
 			return
+
 		case m := <-srv.answers:
 			srv.log.Debug("lachesisAdapter.ReadMsg answer", "msg", msg)
 			msg = *m
 			err = nil
 			return
+
 		case c := <-srv.lachesis.CommitCh():
 			err = srv.blockConvert(&c, &msg)
 			if err == nil {
@@ -77,6 +81,7 @@ func (srv *lachesisAdapter) ReadMsg() (msg p2p.Msg, err error) {
 				srv.log.Warn("lachesisAdapter.ReadMsg commit", "block", c.Block.Body, "err", err)
 				continue
 			}
+
 		}
 	}
 }
@@ -147,14 +152,16 @@ func (srv *lachesisAdapter) blockConvert(c *proto.Commit, m *p2p.Msg) error {
 	}
 
 	// make block
-	// TODO: fill all
 	header := &types.Header{}
 	var uncles []*types.Header
 	var receipts []*types.Receipt
-	block := types.NewBlock(header, txs, uncles, receipts)
+	b := &newBlockData{
+		Block: types.NewBlock(header, txs, uncles, receipts),
+		TD:    big.NewInt(999),
+	}
 
 	// block to Msg
-	size, r, err := rlp.EncodeToReader(block)
+	size, r, err := rlp.EncodeToReader(b)
 	if err != nil {
 		return err
 	}

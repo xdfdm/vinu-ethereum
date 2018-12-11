@@ -30,8 +30,14 @@ start:
 stop:
 	./docker/testnet-stop.sh
 
-console:
-	docker exec -i geth1 /usr/bin/geth --datadir=/gethdata attach rpc:http://127.0.0.1:8545
 
-TTY:
+
+console1:
+	docker exec -i geth1 /usr/bin/geth --datadir=/gethdata attach rpc:http://127.0.0.1:8545
+console2:
+	docker exec -i geth2 /usr/bin/geth --datadir=/gethdata attach rpc:http://127.0.0.1:8545
+
+TTY1:
 	docker exec -ti geth1 /usr/bin/geth --datadir=/gethdata attach rpc:http://127.0.0.1:8545
+TTY2:
+	docker exec -ti geth2 /usr/bin/geth --datadir=/gethdata attach rpc:http://127.0.0.1:8545
