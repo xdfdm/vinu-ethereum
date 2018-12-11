@@ -12,6 +12,17 @@ Ethereum over lachesis network and consensus.
 Full ethereum stack and lachesis performance.
 
 
+## Demo
+
+* start lachesis test net first: `cd $GOPATH/src/github.com/Fantom-foundation/go-lachesis/demo && make start`;
+* change dir: `cd lachesis/demo`;
+* make geth docker image and run 2 containers: `make && make start`;
+* try to send tx: `./20.txn.sh`;
+* try to get balanses: `./10.balances.sh`;
+* stop docker containers: `make stop`; 
+* stop lachesis test net;
+
+
 ## Changes
 
 * Rename `p2p.Server` to `p2p.p2pServer`;
@@ -61,12 +72,7 @@ Full ethereum stack and lachesis performance.
 * Create **lachesis/** package;
 
 
-## Demo
-
-see `lachesis/demo/`
-
-
 ## TODO:
 
 * make eth.lachesisAdapter clever;
-* switch `lachesis/demo/Dockerfile.geth` from local to origin "github.com/Fantom-foundation/go-lachesis" when stable;
+* switch `lachesis/demo/docker/Dockerfile.geth*` from local to origin "github.com/Fantom-foundation/go-lachesis" when stable;
