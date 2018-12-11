@@ -1,0 +1,11 @@
+FROM debian
+
+RUN mkdir -p /root/gethdata
+
+COPY bin/geth /usr/bin/
+
+ENTRYPOINT ["/usr/bin/geth", "--rpcaddr", "0.0.0.0", "--rpcport", "8545", "--wsport", "8546", "--datadir", "/gethdata"]
+
+#EXPOSE 30303/tcp 30303/udp                                                                                                    
+EXPOSE 8545
+EXPOSE 8546
