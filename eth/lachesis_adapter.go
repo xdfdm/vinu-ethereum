@@ -13,10 +13,9 @@ import (
 	"github.com/Fantom-foundation/go-lachesis/src/proxy/proto"
 )
 
-func NewLachesisAdapter(addr string, log log.Logger) p2p.LachesisAdapter {
+func NewLachesisAdapter(addr string) p2p.LachesisAdapter {
 	return &lachesisAdapter{
 		addr: addr,
-		log:  log,
 	}
 }
 
@@ -33,7 +32,10 @@ type lachesisAdapter struct {
  * p2p.LachesisAdapter implementation
  */
 
-func (srv *lachesisAdapter) Start() (err error) {
+func (srv *lachesisAdapter) Start(log log.Logger) (err error) {
+	srv.log = log
+	srv.log.Debug("lachesisAdapter.Start()")
+
 	srv.quit = make(chan struct{})
 
 	srv.lachesis, err = proxy.NewGrpcLachesisProxy(srv.addr, nil)
@@ -55,6 +57,7 @@ func (srv *lachesisAdapter) Address() string {
 // ReadMsg returns a message.
 // Can be called simultaneously from multiple goroutines.
 func (srv *lachesisAdapter) ReadMsg() (msg p2p.Msg, err error) {
+	srv.log.Debug("lachesisAdapter.ReadMsg")
 	// TODO: make it clever
 	select {
 	case <-srv.quit:
@@ -76,6 +79,7 @@ func (srv *lachesisAdapter) ReadMsg() (msg p2p.Msg, err error) {
 // Note that messages can be sent only once because their
 // payload reader is drained.
 func (srv *lachesisAdapter) WriteMsg(msg p2p.Msg) (err error) {
+	srv.log.Debug("lachesisAdapter.WriteMsg", "msg", msg)
 	// TODO: make it clever
 	if msg.Code != TxMsg {
 		srv.log.Trace("WriteMsg", "Code", msg.Code)

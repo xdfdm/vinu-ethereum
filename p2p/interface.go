@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/discv5"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 )
@@ -11,7 +12,7 @@ import (
  */
 
 type LachesisAdapter interface {
-	Start() error
+	Start(log.Logger) error
 	Stop()
 	Address() string
 	// ReadMsg returns a message.

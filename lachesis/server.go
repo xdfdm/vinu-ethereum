@@ -69,7 +69,7 @@ func (srv *lachesisServer) Start() (err error) {
 		srv.log = log.New()
 	}
 
-	err = srv.Config.LachesisAdapter.Start()
+	err = srv.Config.LachesisAdapter.Start(srv.log)
 	if err != nil {
 		return
 	}
