@@ -3,7 +3,9 @@
 set -e
 cd $(dirname $0)
 
-make console << JAVASCRIPT | egrep "^#"
+N=${1:-1}
+
+make console$N << JAVASCRIPT | egrep "^#"
 
 
 function checkAllBalances() {
