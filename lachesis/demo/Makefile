@@ -7,17 +7,14 @@ build: docker/bin/geth docker/genesis.json
 	#docker build -f ./Dockerfile.geth -t geth-with-lachesis ../../../../
 	cd docker && docker build -t "geth-over-lachesis" -f Dockerfile.geth ./
 
-docker/genesis.json: docker/default.pswd docker/bin/geth
+docker/genesis.json: docker/bin/geth
 	cd docker && for i in `seq 1 2`; do ./bin/geth --datadir ./gethdata --password default.pswd account new; done
 	BALANCES="$$( cat docker/gethdata/keystore/UTC* | jq '.address' | sed 's/"\(.*\)"/\\"\1\\": { \\"balance\\": \\"1000000000000000000000000\\" },/g' | xargs | sed 's/.$$//' )" \
 	&& sed "s/{}/{$$BALANCES}/" genesis.tmpl > docker/genesis.json
 	cd docker && ./bin/geth --datadir ./gethdata init genesis.json
 
-docker/bin/geth: docker/default.pswd
+docker/bin/geth:
 	go build -o docker/bin/geth ../../cmd/geth
-
-docker/default.pswd: clean
-	echo 123456 > docker/default.pswd
 
 clean:
 	find docker/ -type d -exec git clean -f -X {}/ \;
