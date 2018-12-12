@@ -1,6 +1,6 @@
 FROM debian
 
-RUN mkdir -p /root/gethdata
+RUN mkdir -p /gethdata
 
 COPY bin/geth /usr/bin/
 

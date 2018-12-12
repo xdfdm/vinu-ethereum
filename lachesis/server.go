@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	peerCount = 1 // see eth.minDesiredPeerCount = 5
+	peerCount = 1 // see eth.minDesiredPeerCount
 )
 
 var (

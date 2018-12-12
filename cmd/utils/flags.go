@@ -1268,10 +1268,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	if gen := ctx.GlobalInt(TrieCacheGenFlag.Name); gen > 0 {
 		state.MaxTrieCacheGen = uint16(gen)
 	}
-
-	if ctx.GlobalIsSet(LachesisAddrFlag.Name) {
-		cfg.Ethash.PowMode = ethash.ModeFake
-	}
 }
 
 // SetDashboardConfig applies dashboard related command line flags to the config.
