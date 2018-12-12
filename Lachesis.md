@@ -74,5 +74,5 @@ Full ethereum stack and lachesis performance.
 
 ## TODO:
 
-* make eth.lachesisAdapter clever;
+* make ethereum blocks from lachesis commits at eth.lachesisAdapter without mining;
 * switch `lachesis/demo/docker/Dockerfile.geth*` from local to origin "github.com/Fantom-foundation/go-lachesis" when stable;
