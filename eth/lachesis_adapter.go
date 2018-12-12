@@ -73,7 +73,8 @@ func (srv *lachesisAdapter) ReadMsg() (msg p2p.Msg, err error) {
 			return
 
 		case c := <-srv.lachesis.CommitCh():
-			err = srv.blockConvert(&c, &msg)
+			// err = srv.commitToNewBlockMsg(&c, &msg) // TODO: use commitToNewBlockMsg() when resolve block.Headers filling
+			err = srv.commitToTxMsg(&c, &msg)
 			if err == nil {
 				srv.log.Debug("lachesisAdapter.ReadMsg commit", "block", c.Block.Body)
 				return
@@ -101,12 +102,12 @@ func (srv *lachesisAdapter) WriteMsg(msg p2p.Msg) (err error) {
 		return nil
 
 	case TxMsg:
-		srv.log.Debug("lachesisAdapter.WriteMsg tx", "msg", msg)
 		var txs []*types.Transaction
 		if err := msg.Decode(&txs); err != nil {
 			return errResp(ErrDecode, "msg %v: %v", msg, err)
 		}
 		for _, tx := range txs {
+			srv.log.Debug("lachesisAdapter.WriteMsg tx", "tx", tx)
 			buf, err := rlp.EncodeToBytes(tx)
 			if err != nil {
 				return err
@@ -134,7 +135,37 @@ func (srv *lachesisAdapter) sendAnswer(msg *p2p.Msg) {
 	srv.answers <- msg
 }
 
-func (srv *lachesisAdapter) blockConvert(c *proto.Commit, m *p2p.Msg) error {
+func (srv *lachesisAdapter) commitToTxMsg(c *proto.Commit, m *p2p.Msg) error {
+	// parse txs
+	var txs []*types.Transaction
+	for _, raw := range c.Block.Body.Transactions {
+		tx := &types.Transaction{}
+		err := rlp.DecodeBytes(raw, tx)
+		if err != nil {
+			srv.log.Warn("invalid tx in Commit", "err", err)
+		} else {
+			txs = append(txs, tx)
+			srv.log.Debug("commitToTxMsg got", "tx", tx)
+		}
+	}
+
+	if len(txs) < 1 {
+		return fmt.Errorf("no valid txs")
+	}
+
+	// txs to Msg
+	size, r, err := rlp.EncodeToReader(txs)
+	if err != nil {
+		return err
+	}
+	m.Code = TxMsg
+	m.Size = uint32(size)
+	m.Payload = r
+
+	return nil
+}
+
+func (srv *lachesisAdapter) commitToNewBlockMsg(c *proto.Commit, m *p2p.Msg) error {
 	// parse txs
 	var txs []*types.Transaction
 	for _, raw := range c.Block.Body.Transactions {
