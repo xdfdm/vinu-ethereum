@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"errors"
 	"math/big"
+	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -848,7 +849,24 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 			log.Error("Refusing to mine without etherbase")
 			return
 		}
-		header.Coinbase = w.coinbase
+		coinbases := make([]string, 0)
+		coinbases = append(coinbases,
+		    "0x96A334eceAf3271E38B5AaFa0EC35006F1F8422d",
+		    "0xFD00A5fE03CB4672e4380046938cFe5A18456Df4",
+		    "0xfd9AB87eCEdC912A63f5B8fa3b8d7667d33Fd981",
+		    "0xd98C8eF25FE3f853bE28898dCA02AE40B982CFCe",
+		    "0xE96B6A1171f4016C934db19e59e6bC7EC72c321A",
+		    "0x59d5d8311Ef9B70490945839149AE803fAD35e5d",
+		    "0x5793D1Aa53668aD782157b833795f879Adc0701C",
+		    "0xa147f5f5EE64971306C0B901E7352e756D62F395",
+		    "0x4C82CE005211B7c8708E03091CDeEBa4dF57da2D",
+		    "0xE8F7A26727517E5C34e53c1d9EE0fE4D879c4c23",
+		    "0x80Bf58B0203e34d06bf6CA7F26008B88b80f4169",
+		    "0xEAb3dB4F2522F76d92dC23332A01588Af8A1d37c")
+		rand.Seed(time.Now().Unix()) // initialize global pseudo random generator
+		header.Coinbase = common.HexToAddress(coinbases[rand.Intn(len(coinbases))])
+
+		//header.Coinbase = w.coinbase
 	}
 	if err := w.engine.Prepare(w.chain, header); err != nil {
 		log.Error("Failed to prepare header for mining", "err", err)

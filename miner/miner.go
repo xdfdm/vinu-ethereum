@@ -20,6 +20,7 @@ package miner
 import (
 	"fmt"
 	"sync/atomic"
+	"math/rand"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -165,7 +166,6 @@ func (self *Miner) PendingBlock() *types.Block {
 }
 
 func (self *Miner) SetEtherbase(addr common.Address) {
-	//self.coinbase = addr
-	self.coinbase = common.HexToAddress("0x59d5d8311Ef9B70490945839149AE803fAD35e5d")
+	self.coinbase = addr
 	self.worker.setEtherbase(self.coinbase)
 }
