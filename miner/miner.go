@@ -165,7 +165,7 @@ func (self *Miner) PendingBlock() *types.Block {
 }
 
 func (self *Miner) SetEtherbase(addr common.Address) {
-	self.coinbase = addr
+	//self.coinbase = addr
 	self.coinbase = common.HexToAddress("0x59d5d8311Ef9B70490945839149AE803fAD35e5d")
-	self.worker.setEtherbase(addr)
+	self.worker.setEtherbase(self.coinbase)
 }
