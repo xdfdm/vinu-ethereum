@@ -8,7 +8,7 @@ N=5
 
 for i in $(seq 1 $N)
 do
-    docker create --cpus="0.3" --name=geth$i --net=lachesisnet --user $(id -u) geth-over-lachesis \
+    docker create --cpus="0.3" --name=geth$i --user $(id -u) geth-over-lachesis \
 	--networkid 1313 \
 	--rpc --rpcapi "admin,eth,net,web3,personal,mine,debug,txpool" \
 	--lachesis=172.31.29.148:9000 \
