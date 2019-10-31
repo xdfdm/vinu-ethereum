@@ -17,6 +17,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -26,16 +27,16 @@ import (
 	"runtime/pprof"
 	"time"
 
-	"github.com/ethereum/go-ethereum/cmd/evm/internal/compiler"
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/core/vm/runtime"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/Fantom-foundation/go-ethereum/cmd/evm/internal/compiler"
+	"github.com/Fantom-foundation/go-ethereum/cmd/utils"
+	"github.com/Fantom-foundation/go-ethereum/common"
+	"github.com/Fantom-foundation/go-ethereum/core"
+	"github.com/Fantom-foundation/go-ethereum/core/rawdb"
+	"github.com/Fantom-foundation/go-ethereum/core/state"
+	"github.com/Fantom-foundation/go-ethereum/core/vm"
+	"github.com/Fantom-foundation/go-ethereum/core/vm/runtime"
+	"github.com/Fantom-foundation/go-ethereum/log"
+	"github.com/Fantom-foundation/go-ethereum/params"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -145,6 +146,7 @@ func runCmd(ctx *cli.Context) error {
 		} else {
 			hexcode = []byte(codeFlag)
 		}
+		hexcode = bytes.TrimSpace(hexcode)
 		if len(hexcode)%2 != 0 {
 			fmt.Printf("Invalid input length for hex data (%d)\n", len(hexcode))
 			os.Exit(1)

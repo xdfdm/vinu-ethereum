@@ -20,9 +20,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/Fantom-foundation/go-ethereum/internal/ethapi"
+	"github.com/Fantom-foundation/go-ethereum/log"
+	"github.com/Fantom-foundation/go-ethereum/rpc"
 )
 
 type StdIOUI struct {

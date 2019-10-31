@@ -25,11 +25,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/enr"
+	"github.com/Fantom-foundation/go-ethereum/common/mclock"
+	"github.com/Fantom-foundation/go-ethereum/crypto"
+	"github.com/Fantom-foundation/go-ethereum/log"
+	"github.com/Fantom-foundation/go-ethereum/p2p/enode"
+	"github.com/Fantom-foundation/go-ethereum/p2p/enr"
 	lru "github.com/hashicorp/golang-lru"
 )
 
@@ -107,7 +107,7 @@ func NewClient(cfg Config, urls ...string) (*Client, error) {
 // SyncTree downloads the entire node tree at the given URL. This doesn't add the tree for
 // later use, but any previously-synced entries are reused.
 func (c *Client) SyncTree(url string) (*Tree, error) {
-	le, err := parseURL(url)
+	le, err := parseLink(url)
 	if err != nil {
 		return nil, fmt.Errorf("invalid enrtree URL: %v", err)
 	}
@@ -122,7 +122,7 @@ func (c *Client) SyncTree(url string) (*Tree, error) {
 
 // AddTree adds a enrtree:// URL to crawl.
 func (c *Client) AddTree(url string) error {
-	le, err := parseURL(url)
+	le, err := parseLink(url)
 	if err != nil {
 		return fmt.Errorf("invalid enrtree URL: %v", err)
 	}

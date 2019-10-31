@@ -22,24 +22,26 @@ package eth
 import (
 	"crypto/ecdsa"
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"sort"
 	"sync"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/Fantom-foundation/go-ethereum/common"
+	"github.com/Fantom-foundation/go-ethereum/consensus/ethash"
+	"github.com/Fantom-foundation/go-ethereum/core"
+	"github.com/Fantom-foundation/go-ethereum/core/forkid"
+	"github.com/Fantom-foundation/go-ethereum/core/rawdb"
+	"github.com/Fantom-foundation/go-ethereum/core/types"
+	"github.com/Fantom-foundation/go-ethereum/core/vm"
+	"github.com/Fantom-foundation/go-ethereum/crypto"
+	"github.com/Fantom-foundation/go-ethereum/eth/downloader"
+	"github.com/Fantom-foundation/go-ethereum/ethdb"
+	"github.com/Fantom-foundation/go-ethereum/event"
+	"github.com/Fantom-foundation/go-ethereum/p2p"
+	"github.com/Fantom-foundation/go-ethereum/p2p/enode"
+	"github.com/Fantom-foundation/go-ethereum/params"
 )
 
 var (
@@ -171,20 +173,35 @@ func newTestPeer(name string, version int, pm *ProtocolManager, shake bool) (*te
 			head    = pm.blockchain.CurrentHeader()
 			td      = pm.blockchain.GetTd(head.Hash(), head.Number.Uint64())
 		)
-		tp.handshake(nil, td, head.Hash(), genesis.Hash())
+		tp.handshake(nil, td, head.Hash(), genesis.Hash(), forkid.NewID(pm.blockchain), forkid.NewFilter(pm.blockchain))
 	}
 	return tp, errc
 }
 
 // handshake simulates a trivial handshake that expects the same state from the
 // remote side as we are simulating locally.
-func (p *testPeer) handshake(t *testing.T, td *big.Int, head common.Hash, genesis common.Hash) {
-	msg := &statusData{
-		ProtocolVersion: uint32(p.version),
-		NetworkId:       DefaultConfig.NetworkId,
-		TD:              td,
-		CurrentBlock:    head,
-		GenesisBlock:    genesis,
+func (p *testPeer) handshake(t *testing.T, td *big.Int, head common.Hash, genesis common.Hash, forkID forkid.ID, forkFilter forkid.Filter) {
+	var msg interface{}
+	switch {
+	case p.version == eth63:
+		msg = &statusData63{
+			ProtocolVersion: uint32(p.version),
+			NetworkId:       DefaultConfig.NetworkId,
+			TD:              td,
+			CurrentBlock:    head,
+			GenesisBlock:    genesis,
+		}
+	case p.version == eth64:
+		msg = &statusData{
+			ProtocolVersion: uint32(p.version),
+			NetworkID:       DefaultConfig.NetworkId,
+			TD:              td,
+			Head:            head,
+			Genesis:         genesis,
+			ForkID:          forkID,
+		}
+	default:
+		panic(fmt.Sprintf("unsupported eth protocol version: %d", p.version))
 	}
 	if err := p2p.ExpectMsg(p.app, StatusMsg, msg); err != nil {
 		t.Fatalf("status recv: %v", err)

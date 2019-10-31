@@ -22,8 +22,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/Fantom-foundation/go-ethereum/common/mclock"
+	"github.com/Fantom-foundation/go-ethereum/p2p/enode"
 )
 
 // clientTree is a full tree being synced.
@@ -120,7 +120,7 @@ func (ct *clientTree) syncNextRandomENR(ctx context.Context) (*enode.Node, error
 }
 
 func (ct *clientTree) String() string {
-	return ct.loc.url()
+	return ct.loc.String()
 }
 
 // removeHash removes the element at index from h.
@@ -209,7 +209,7 @@ func (ts *subtreeSync) resolveNext(ctx context.Context, hash string) (entry, err
 		if !ts.link {
 			return nil, errLinkInENRTree
 		}
-	case *subtreeEntry:
+	case *branchEntry:
 		ts.missing = append(ts.missing, e.children...)
 	}
 	return e, nil

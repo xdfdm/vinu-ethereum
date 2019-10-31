@@ -17,18 +17,21 @@
 package discover
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net"
+	"reflect"
 	"sort"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/enr"
+	"github.com/Fantom-foundation/go-ethereum/crypto"
+	"github.com/Fantom-foundation/go-ethereum/log"
+	"github.com/Fantom-foundation/go-ethereum/p2p/enode"
+	"github.com/Fantom-foundation/go-ethereum/p2p/enr"
 )
 
 var nullNode *enode.Node
@@ -167,6 +170,28 @@ func hasDuplicates(slice []*node) bool {
 		seen[e.ID()] = true
 	}
 	return false
+}
+
+func checkNodesEqual(got, want []*enode.Node) error {
+	if reflect.DeepEqual(got, want) {
+		return nil
+	}
+	output := new(bytes.Buffer)
+	fmt.Fprintf(output, "got %d nodes:\n", len(got))
+	for _, n := range got {
+		fmt.Fprintf(output, "  %v %v\n", n.ID(), n)
+	}
+	fmt.Fprintf(output, "want %d:\n", len(want))
+	for _, n := range want {
+		fmt.Fprintf(output, "  %v %v\n", n.ID(), n)
+	}
+	return errors.New(output.String())
+}
+
+func sortByID(nodes []*enode.Node) {
+	sort.Slice(nodes, func(i, j int) bool {
+		return string(nodes[i].ID().Bytes()) < string(nodes[j].ID().Bytes())
+	})
 }
 
 func sortedByDistanceTo(distbase enode.ID, slice []*node) bool {

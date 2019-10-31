@@ -24,13 +24,13 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/eth/gasprice"
-	"github.com/ethereum/go-ethereum/miner"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/Fantom-foundation/go-ethereum/common"
+	"github.com/Fantom-foundation/go-ethereum/consensus/ethash"
+	"github.com/Fantom-foundation/go-ethereum/core"
+	"github.com/Fantom-foundation/go-ethereum/eth/downloader"
+	"github.com/Fantom-foundation/go-ethereum/eth/gasprice"
+	"github.com/Fantom-foundation/go-ethereum/miner"
+	"github.com/Fantom-foundation/go-ethereum/params"
 )
 
 // DefaultConfig contains default settings for use on the Ethereum main net.

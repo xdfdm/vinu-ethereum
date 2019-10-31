@@ -22,9 +22,9 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/ethereum/go-ethereum/internal/debug"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/Fantom-foundation/go-ethereum/internal/debug"
+	"github.com/Fantom-foundation/go-ethereum/p2p/enode"
+	"github.com/Fantom-foundation/go-ethereum/params"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -60,6 +60,7 @@ func init() {
 		enrdumpCommand,
 		discv4Command,
 		dnsCommand,
+		nodesetCommand,
 	}
 }
 
