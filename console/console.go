@@ -137,7 +137,7 @@ func (c *Console) init(preload []string) error {
 	if err != nil {
 		return fmt.Errorf("api modules: %v", err)
 	}
-	flatten := "var eth = web3.eth; var personal = web3.personal; "
+	flatten := "var ftm = web3.ftm; var personal = web3.personal;"
 	for api := range apis {
 		if api == "web3" {
 			continue // manually mapped or ignore
@@ -280,9 +280,9 @@ func (c *Console) Welcome() {
 	if res, err := c.jsre.Run(`
 		var message = "instance: " + web3.version.node + "\n";
 		try {
-			message += "coinbase: " + eth.coinbase + "\n";
+			message += "coinbase: " + ftm.coinbase + "\n";
 		} catch (err) {}
-		message += "at block: " + eth.blockNumber + " (" + new Date(1000 * eth.getBlock(eth.blockNumber).timestamp) + ")\n";
+		message += "at block: " + ftm.blockNumber + " (" + new Date(1000 * ftm.getBlock(ftm.blockNumber).timestamp) + ")\n";
 		try {
 			message += " datadir: " + admin.datadir + "\n";
 		} catch (err) {}
@@ -294,6 +294,9 @@ func (c *Console) Welcome() {
 	if apis, err := c.client.SupportedModules(); err == nil {
 		modules := make([]string, 0, len(apis))
 		for api, version := range apis {
+			if api == "eth" {
+				api = "ftm"
+			}
 			modules = append(modules, fmt.Sprintf("%s:%s", api, version))
 		}
 		sort.Strings(modules)
