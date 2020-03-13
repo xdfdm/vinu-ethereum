@@ -6,7 +6,7 @@
 // web3.js
 // DO NOT EDIT!
 
-package main
+package deps
 
 import (
 	"bytes"
