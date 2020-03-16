@@ -1926,6 +1926,25 @@ var unitMap = {
 };
 
 /**
+ * Should be called to construct and serialize validator moniker to hex string
+ *
+ * @method toMoniker
+ * @param {String} validator name in utf8
+ * @param {String} validator description in utf8
+ * @param {String} validator web site URL
+ * @returns {String} encoded moniker JSON data
+ */
+var toMoniker = function (name, description, webSite) {
+  var jsData = {
+    Name: name,
+    Description: description,
+    WebSite: webSite
+  };
+
+  return toHex(jsData)
+};
+
+/**
  * Should be called to pad string to expected length
  *
  * @method padLeft
@@ -2453,6 +2472,7 @@ var isTopic = function (topic) {
 };
 
 module.exports = {
+    toMoniker: toMoniker,
     padLeft: padLeft,
     padRight: padRight,
     toHex: toHex,
@@ -2595,7 +2615,7 @@ Web3.prototype.toChecksumAddress = utils.toChecksumAddress;
 Web3.prototype.isIBAN = utils.isIBAN;
 Web3.prototype.padLeft = utils.padLeft;
 Web3.prototype.padRight = utils.padRight;
-
+Web3.prototype.toMoniker = utils.toMoniker;
 
 Web3.prototype.sha3 = function(string, options) {
     return '0x' + sha3(string, options);
