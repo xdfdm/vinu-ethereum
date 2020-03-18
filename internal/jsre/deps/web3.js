@@ -5514,7 +5514,7 @@ var methods = function () {
         name: 'getEpochStats',
         call: 'ftm_getEpochStats',
         params: 1,
-        outputFormatter: outputEpochStatsFormatter
+        outputFormatter: formatters.outputEpochStatsFormatter
     });
 
     return [
