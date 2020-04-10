@@ -5855,7 +5855,7 @@ var methods = function () {
     name: 'ttfReport',
     call: 'debug_ttfReport',
     params: 4,
-    inputFormatter: [formatters.inputBlockNumberFormatter, utils.toHex, null, utils.toHex ]
+    inputFormatter: [formatters.inputBlockNumberFormatter, utils.toHex, null, utils.toHex ],
     outputFormatter: formatters.outputTtfReportFormatter
   });
 
@@ -5863,7 +5863,7 @@ var methods = function () {
     name: 'validatorTimeDrifts',
     call: 'debug_validatorTimeDrifts',
     params: 3,
-    inputFormatter: [formatters.inputBlockNumberFormatter, utils.toHex, utils.toHex]
+    inputFormatter: [formatters.inputBlockNumberFormatter, utils.toHex, utils.toHex],
     outputFormatter: formatters.outputValidatorTimeDriftsFormatter
   });
 
@@ -5871,7 +5871,7 @@ var methods = function () {
     name: 'validatorVersions',
     call: 'debug_validatorVersions',
     params: 2,
-    inputFormatter: [formatters.inputBlockNumberFormatter, utils.toHex]
+    inputFormatter: [formatters.inputBlockNumberFormatter, utils.toHex],
     outputFormatter: formatters.outputKeysToDecimal
   });
 
@@ -6218,6 +6218,13 @@ var methods = function () {
         inputFormatter: [formatters.inputTransactionFormatter, null]
     });
 
+    var sendTrustedTransaction = new Method({
+        name: 'sendTrustedTransaction',
+        call: 'personal_sendTrustedTransaction',
+        params: 2,
+        inputFormatter: [formatters.inputTransactionFormatter, null]
+    });
+
     var lockAccount = new Method({
         name: 'lockAccount',
         call: 'personal_lockAccount',
@@ -6232,6 +6239,7 @@ var methods = function () {
         ecRecover,
         sign,
         sendTransaction,
+        sendTrustedTransaction,
         lockAccount
     ];
 };
