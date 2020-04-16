@@ -5695,6 +5695,22 @@ var methods = function () {
         outputFormatter: formatters.outputEpochStatsFormatter
     });
 
+    var getBlockTPS = new Method({
+        name: 'getBlockTPS',
+        call: 'ftm_getBlockTPSByNumber',
+        params: 1,
+        inputFormatter: [formatters.inputBlockNumberFormatter],
+        outputFormatter: utils.toDecimal
+    });
+
+    var getEpochTPS = new Method({
+        name: 'getEpochTPS',
+        call: 'ftm_getEpochTPSByNumber',
+        params: 1,
+        inputFormatter: [formatters.inputBlockNumberFormatter],
+        outputFormatter: utils.toDecimal
+    });
+
     return [
         getBalance,
         getStorageAt,
@@ -5724,7 +5740,9 @@ var methods = function () {
         getHeads,
         getConsensusTime,
         currentEpoch,
-        getEpochStats
+        getEpochStats,
+        getBlockTPS,
+        getEpochTPS
     ];
 };
 
