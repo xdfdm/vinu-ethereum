@@ -3891,6 +3891,17 @@ var outputEpochStatsFormatter = function(data) {
 };
 
 /**
+ * @method outputTPSFormatter
+ * @param data {Integer}
+ * @returns {Object}
+ */
+var outputTPSFormatter = function(data) {
+    data = utils.toDecimal(data / 1000);
+
+    return data;
+};
+
+/**
  * @method outputStakerFormatter
  * @param {Object} staker data
  * @returns {Object}
@@ -4183,7 +4194,8 @@ module.exports = {
     outputStakersFormatter: outputStakersFormatter,
     outputKeysToDecimal: outputKeysToDecimal,
     outputDelegatorFormatter: outputDelegatorFormatter,
-    outputDelegatorsFormatter: outputDelegatorsFormatter
+    outputDelegatorsFormatter: outputDelegatorsFormatter,
+    outputTPSFormatter: outputTPSFormatter
 };
 
 
@@ -5700,7 +5712,7 @@ var methods = function () {
         call: 'ftm_getBlockTPSByNumber',
         params: 1,
         inputFormatter: [formatters.inputBlockNumberFormatter],
-        outputFormatter: utils.toDecimal
+        outputFormatter: formatters.outputTPSFormatter
     });
 
     var getEpochTPS = new Method({
@@ -5708,7 +5720,7 @@ var methods = function () {
         call: 'ftm_getEpochTPSByNumber',
         params: 1,
         inputFormatter: [formatters.inputBlockNumberFormatter],
-        outputFormatter: utils.toDecimal
+        outputFormatter: formatters.outputTPSFormatter
     });
 
     return [
