@@ -3891,6 +3891,17 @@ var outputEpochStatsFormatter = function(data) {
 };
 
 /**
+ * @method outputTPSFormatter
+ * @param data {Integer}
+ * @returns {Object}
+ */
+var outputTPSFormatter = function(data) {
+    data = utils.toDecimal(data / 1000);
+
+    return data;
+};
+
+/**
  * @method outputStakerFormatter
  * @param {Object} staker data
  * @returns {Object}
@@ -4183,7 +4194,8 @@ module.exports = {
     outputStakersFormatter: outputStakersFormatter,
     outputKeysToDecimal: outputKeysToDecimal,
     outputDelegatorFormatter: outputDelegatorFormatter,
-    outputDelegatorsFormatter: outputDelegatorsFormatter
+    outputDelegatorsFormatter: outputDelegatorsFormatter,
+    outputTPSFormatter: outputTPSFormatter
 };
 
 
@@ -5695,6 +5707,22 @@ var methods = function () {
         outputFormatter: formatters.outputEpochStatsFormatter
     });
 
+    var getBlockTPS = new Method({
+        name: 'getBlockTPS',
+        call: 'ftm_getBlockTPS',
+        params: 1,
+        inputFormatter: [formatters.inputBlockNumberFormatter],
+        outputFormatter: formatters.outputTPSFormatter
+    });
+
+    var getEpochTPS = new Method({
+        name: 'getEpochTPS',
+        call: 'ftm_getEpochTPS',
+        params: 1,
+        inputFormatter: [formatters.inputBlockNumberFormatter],
+        outputFormatter: formatters.outputTPSFormatter
+    });
+
     return [
         getBalance,
         getStorageAt,
@@ -5724,7 +5752,9 @@ var methods = function () {
         getHeads,
         getConsensusTime,
         currentEpoch,
-        getEpochStats
+        getEpochStats,
+        getBlockTPS,
+        getEpochTPS
     ];
 };
 
