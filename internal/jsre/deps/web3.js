@@ -6174,7 +6174,7 @@ var properties = function () {
             outputFormatter: utils.toDecimal
         }),
         new Property({
-          name: 'GetPeersEventsCount',
+          name: 'getPeersEventsCount',
           getter: 'net_getPeersEventsCount',
           outputFormatter: formatters.outputObjectDecimalProperties
         })
@@ -6183,7 +6183,7 @@ var properties = function () {
 
 module.exports = Net;
 
-},{"../../utils/utils":20,"../property":45}],40:[function(require,module,exports){
+},{"../formatters":30,"../../utils/utils":20,"../property":45}],40:[function(require,module,exports){
 /*
     This file is part of web3.js.
 
