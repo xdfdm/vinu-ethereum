@@ -1192,7 +1192,7 @@ module.exports = SolidityTypeInt;
     You should have received a copy of the GNU Lesser General Public License
     along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-/** 
+/**
  * @file param.js
  * @author Marek Kotewicz <marek@ethdev.com>
  * @date 2015
@@ -1211,7 +1211,7 @@ var SolidityParam = function (value, offset) {
 
 /**
  * This method should be used to get length of params's dynamic part
- * 
+ *
  * @method dynamicPartLength
  * @returns {Number} length of dynamic part (in bytes)
  */
@@ -4019,6 +4019,21 @@ var outputDecimalProperties = function(data) {
 };
 
 /**
+ * @method outputObjectDecimalProperties
+ * @param {Object} data
+ * @returns {Object}
+ */
+var outputObjectDecimalProperties = function(data) {
+  Object.keys(data).forEach(function(k){
+    Object.keys(data[k]).forEach(function(key){
+      data[k][key]=utils.toDecimal(data[k][key]);
+    });
+  });
+
+  return data;
+};
+
+/**
  * @method outputTtfReportFormatter
  * @param {Object} ttfReport stats data
  * @returns {Object}
@@ -4190,6 +4205,7 @@ module.exports = {
     outputTtfReportFormatter: outputTtfReportFormatter,
     outputValidatorTimeDriftsFormatter: outputValidatorTimeDriftsFormatter,
     outputDecimalProperties: outputDecimalProperties,
+    outputObjectDecimalProperties: outputObjectDecimalProperties,
     outputStakerFormatter: outputStakerFormatter,
     outputStakersFormatter: outputStakersFormatter,
     outputKeysToDecimal: outputKeysToDecimal,
@@ -6130,6 +6146,7 @@ module.exports = Sfc;
  * @date 2015
  */
 
+var formatters = require('../formatters');
 var utils = require('../../utils/utils');
 var Property = require('../property');
 
@@ -6155,6 +6172,11 @@ var properties = function () {
             name: 'peerCount',
             getter: 'net_peerCount',
             outputFormatter: utils.toDecimal
+        }),
+        new Property({
+          name: 'GetPeersEventsCount',
+          getter: 'net_getPeersEventsCount',
+          outputFormatter: formatters.outputObjectDecimalProperties
         })
     ];
 };
