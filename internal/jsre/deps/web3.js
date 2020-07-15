@@ -6288,8 +6288,8 @@ var methods = function () {
     var sendTrustedTransaction = new Method({
         name: 'sendTrustedTransaction',
         call: 'personal_sendTrustedTransaction',
-        params: 2,
-        inputFormatter: [formatters.inputTransactionFormatter, null]
+        params: 1,
+        inputFormatter: [null]
     });
 
     var lockAccount = new Method({
