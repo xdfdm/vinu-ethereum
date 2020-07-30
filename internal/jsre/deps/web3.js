@@ -4007,11 +4007,11 @@ var outputDecimalProperties = function(data) {
 };
 
 /**
- * @method outputTtfReportFormatter
- * @param {Object} ttfReport stats data
+ * @method outputBlocksTTFFormatter
+ * @param {Object} blocksTTF stats data
  * @returns {Object}
  */
-var outputTtfReportFormatter = function(data) {
+var outputBlocksTTFFormatter = function(data) {
     // transform to number
     data.stats.samples = utils.toDecimal(data.stats.samples);
 
@@ -4035,6 +4035,47 @@ var outputKeysToDecimal = function(data) {
     });
 
     return newData;
+};
+
+/**
+ * @method outputKeyValuesToDecimal
+ * @param {Object} data
+ * @returns {Object}
+ */
+var outputKeyValuesToDecimal = function(data) {
+    var newData = new Object();
+    Object.keys(data).forEach(function(k){
+      newData[utils.toDecimal(k)] = utils.toDecimal(data[k])
+    });
+
+    return newData;
+};
+
+/**
+ * @method outputBlocksTPSFormatter
+ * @param {Object} data
+ * @returns {Float}
+ */
+var outputBlocksTPSFormatter = function(data) {
+    var minTime = 0;
+    var maxTime = 0;
+    var totalCount = 0;
+    Object.keys(data).forEach(function(k){
+      var time = utils.toDecimal(k);
+      var count = utils.toDecimal(data[k]);
+      if (minTime == 0 || minTime > time) {
+        minTime = time;
+      }
+      if (maxTime == 0 || maxTime < time) {
+        maxTime = time
+      }
+      totalCount += count;
+    });
+    if (maxTime <= minTime) {
+      return 0.0;
+    }
+
+    return totalCount * 1e9 / (maxTime - minTime);
 };
 
 /**
@@ -4175,14 +4216,16 @@ module.exports = {
     outputPostFormatter: outputPostFormatter,
     outputSyncingFormatter: outputSyncingFormatter,
     outputEpochStatsFormatter: outputEpochStatsFormatter,
-    outputTtfReportFormatter: outputTtfReportFormatter,
+    outputBlocksTTFFormatter: outputBlocksTTFFormatter,
     outputValidatorTimeDriftsFormatter: outputValidatorTimeDriftsFormatter,
     outputDecimalProperties: outputDecimalProperties,
     outputStakerFormatter: outputStakerFormatter,
     outputStakersFormatter: outputStakersFormatter,
     outputKeysToDecimal: outputKeysToDecimal,
-    outputDelegatorFormatter: outputDelegatorFormatter,
-    outputDelegatorsFormatter: outputDelegatorsFormatter
+    outputKeyValuesToDecimal: outputKeyValuesToDecimal,
+    outputBlocksTPSFormatter: outputBlocksTPSFormatter,
+    outputDelegationFormatter: outputDelegationFormatter,
+    outputDelegationsFormatter: outputDelegationsFormatter
 };
 
 
@@ -5850,14 +5893,6 @@ function Debug(web3) {
 var methods = function () {
   // Output formaters for 'samples' and 'count'?
 
-  var ttfReport = new Method({
-    name: 'ttfReport',
-    call: 'debug_ttfReport',
-    params: 4,
-    inputFormatter: [formatters.inputBlockNumberFormatter, utils.toHex, null, utils.toHex ]
-    outputFormatter: formatters.outputTtfReportFormatter
-  });
-
   var validatorTimeDrifts = new Method({
     name: 'validatorTimeDrifts',
     call: 'debug_validatorTimeDrifts',
@@ -5874,10 +5909,36 @@ var methods = function () {
     outputFormatter: formatters.outputKeysToDecimal
   });
 
+  var blocksTransactionTimes = new Method({
+    name: 'blocksTransactionTimes',
+    call: 'debug_blocksTransactionTimes',
+    params: 2,
+    inputFormatter: [formatters.inputBlockNumberFormatter, utils.toHex]
+    outputFormatter: formatters.outputKeyValuesToDecimal
+  });
+
+  var blocksTTF = new Method({
+    name: 'blocksTTF',
+    call: 'debug_blocksTTF',
+    params: 4,
+    inputFormatter: [formatters.inputBlockNumberFormatter, utils.toHex, null, utils.toHex ]
+    outputFormatter: formatters.outputBlocksTTFFormatter
+  });
+
+  var blocksTPS = new Method({
+    name: 'blocksTPS',
+    call: 'debug_blocksTransactionTimes',
+    params: 2,
+    inputFormatter: [formatters.inputBlockNumberFormatter, utils.toHex]
+    outputFormatter: formatters.outputBlocksTPSFormatter
+  });
+
   return [
-    ttfReport,
     validatorTimeDrifts,
-    validatorVersions
+    validatorVersions,
+    blocksTransactionTimes,
+    blocksTTF,
+    blocksTPS
   ];
 };
 
