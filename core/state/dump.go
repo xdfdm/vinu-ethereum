@@ -18,7 +18,9 @@ package state
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -33,6 +35,18 @@ type DumpCollector interface {
 	OnRoot(common.Hash)
 	// OnAccount is called once for each account in the trie
 	OnAccount(common.Address, DumpAccount)
+}
+
+type SafeDumpCollector interface {
+	OnAccount(common.Address, SafeDumpAccount)
+	OnStorage(common.Address, common.Hash, []byte)
+}
+
+type SafeDumpAccount struct {
+	Balance *big.Int
+	Nonce   uint64
+	Code    []byte
+	Address common.Address
 }
 
 // DumpAccount represents an account in the state.
@@ -109,6 +123,51 @@ func (d iterativeDump) OnRoot(root common.Hash) {
 	d.Encode(struct {
 		Root common.Hash `json:"root"`
 	}{root})
+}
+
+func (s *StateDB) DumpToSafeCollector(c SafeDumpCollector, excludeCode, excludeStorage bool, start []byte, maxResults int) (nextKey []byte, err error) {
+	var count int
+	it := trie.NewIterator(s.trie.NodeIterator(start))
+	for it.Next() {
+		var data Account
+		if err := rlp.DecodeBytes(it.Value, &data); err != nil {
+			panic(err)
+		}
+		account := SafeDumpAccount{
+			Balance: data.Balance,
+			Nonce:   data.Nonce,
+		}
+		addrBytes := s.trie.GetKey(it.Key)
+		if addrBytes == nil {
+			// Preimage missing
+			return nil, errors.New("missing preimage")
+		}
+		addr := common.BytesToAddress(addrBytes)
+		obj := newObject(nil, addr, data)
+		if !excludeCode {
+			account.Code = obj.Code(s.db)
+		}
+		if !excludeStorage {
+			storageIt := trie.NewIterator(obj.getTrie(s.db).NodeIterator(nil))
+			for storageIt.Next() {
+				_, content, _, err := rlp.Split(storageIt.Value)
+				if err != nil {
+					return nil, err
+				}
+				c.OnStorage(addr, common.BytesToHash(s.trie.GetKey(storageIt.Key)), content)
+			}
+		}
+		c.OnAccount(addr, account)
+		count++
+		if maxResults > 0 && count >= maxResults {
+			if it.Next() {
+				nextKey = it.Key
+			}
+			break
+		}
+	}
+
+	return nextKey, nil
 }
 
 func (s *StateDB) DumpToCollector(c DumpCollector, excludeCode, excludeStorage, excludeMissingPreimages bool, start []byte, maxResults int) (nextKey []byte) {
