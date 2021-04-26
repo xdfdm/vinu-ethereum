@@ -76,6 +76,7 @@ var (
 	errSelf             = errors.New("is self")
 	errAlreadyDialing   = errors.New("already dialing")
 	errAlreadyConnected = errors.New("already connected")
+	errAlreadyListened  = errors.New("already listened")
 	errRecentlyDialed   = errors.New("recently dialed")
 	errNotWhitelisted   = errors.New("not contained in netrestrict whitelist")
 	errNoPort           = errors.New("node does not provide TCP port")
