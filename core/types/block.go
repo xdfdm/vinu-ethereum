@@ -82,6 +82,9 @@ type Header struct {
 	Extra       []byte         `json:"extraData"        gencodec:"required"`
 	MixDigest   common.Hash    `json:"mixHash"`
 	Nonce       BlockNonce     `json:"nonce"`
+
+	// caches
+	hash atomic.Value `rlp:"-"`
 }
 
 // field type overrides for gencodec
@@ -98,7 +101,15 @@ type headerMarshaling struct {
 // Hash returns the block hash of the header, which is simply the keccak256 hash of its
 // RLP encoding.
 func (h *Header) Hash() common.Hash {
+	cached := h.hash.Load()
+	if cached != nil {
+		return cached.(common.Hash)
+	}
 	return rlpHash(h)
+}
+
+func (h *Header) SetHashCache(hash common.Hash) {
+	h.hash.Store(hash)
 }
 
 var headerSize = common.StorageSize(reflect.TypeOf(Header{}).Size())
