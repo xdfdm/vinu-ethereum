@@ -836,6 +836,8 @@ running:
 
 func (srv *Server) postHandshakeChecks(peers map[enode.ID]*Peer, inboundCount int, c *conn) error {
 	switch {
+	case discfilter.BannedDynamic(c.node.ID()):
+		return DiscBanned
 	case !c.is(trustedConn) && len(peers) >= srv.MaxPeers:
 		return DiscTooManyPeers
 	case !c.is(trustedConn) && c.is(inboundConn) && inboundCount >= srv.maxInboundConns():
@@ -854,9 +856,10 @@ func (srv *Server) postHandshakeChecks(peers map[enode.ID]*Peer, inboundCount in
 }
 
 func (srv *Server) addPeerChecks(peers map[enode.ID]*Peer, inboundCount int, c *conn) error {
-	// Drop connections with no matching protocols.
+	// Drop connections and ban the peer with no matching protocols.
 	if len(srv.Protocols) > 0 && countMatchingProtocols(srv.Protocols, c.caps) == 0 {
-		return DiscUselessPeer
+		discfilter.Ban(c.node.ID())
+		return DiscBanned
 	}
 	// Repeat the post-handshake checks because the
 	// peer set might have changed since those checks were performed.
