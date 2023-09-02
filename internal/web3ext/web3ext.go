@@ -20,9 +20,9 @@ package web3ext
 var Modules = map[string]string{
 	"admin":    AdminJs,
 	"clique":   CliqueJs,
-	"ftmash":   FtmashJs,
+	"vcash":    VcashJs,
 	"debug":    DebugJs,
-	"ftm":      FtmJs,
+	"vc":       VcJs,
 	"miner":    MinerJs,
 	"net":      NetJs,
 	"personal": PersonalJs,
@@ -89,9 +89,9 @@ web3._extend({
 });
 `
 
-const FtmashJs = `
+const VcashJs = `
 web3._extend({
-	property: 'ftmash',
+	property: 'vcash',
 	methods: [
 		new web3._extend.Method({
 			name: 'getWork',
@@ -466,9 +466,9 @@ web3._extend({
 });
 `
 
-const FtmJs = `
+const VcJs = `
 web3._extend({
-	property: 'ftm',
+	property: 'vc',
 	methods: [
 		new web3._extend.Method({
 			name: 'chainId',
