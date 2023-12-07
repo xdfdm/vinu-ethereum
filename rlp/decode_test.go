@@ -659,6 +659,11 @@ var decodeTests = []decodeTest{
 		error: "rlp: input list has too many elements for rlp.optionalFields",
 	},
 	{
+		input: "C3010004", // not accepted because "optional" doesn't enable "nil"
+		ptr:   new(optionalFields),
+		error: "rlp: non-canonical integer (leading zero bytes) for uint, decoding into (rlp.optionalFields).B",
+	},
+	{
 		input: "C101",
 		ptr:   new(optionalAndTailField),
 		value: optionalAndTailField{A: 1},

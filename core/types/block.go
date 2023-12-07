@@ -88,6 +88,10 @@ type Header struct {
 
 	// caches
 	externalHash atomic.Value `rlp:"-"`
+
+	// quota
+	QuotaLimit uint64 `json:"quotaLimit" rlp:"optional"`
+	QuotaUsed  uint64 `json:"quotaUsed" rlp:"optional"`
 }
 
 // field type overrides for gencodec

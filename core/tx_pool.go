@@ -318,9 +318,13 @@ func NewTxPool(config TxPoolConfig, chainconfig *params.ChainConfig, chain block
 	return pool
 }
 
-// loop is the transaction pool's main event loop, waiting for and reacting to
-// outside blockchain events as well as for various reporting and transaction
-// eviction events.
+// // TxPool contains all currently known transactions. Transactions
+// enter the pool when they are received from the network or submitted
+// locally. They exit the pool when they are included in the blockchain.
+//
+// The pool separates processable transactions (which can be applied to the
+// current state) and future transactions. Transactions move between those
+// two states over time as they are received and processed.
 func (pool *TxPool) loop() {
 	defer pool.wg.Done()
 

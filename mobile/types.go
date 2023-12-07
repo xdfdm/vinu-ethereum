@@ -367,11 +367,13 @@ func (r *Receipt) String() string {
 	return encodeOrError(r)
 }
 
-func (r *Receipt) GetStatus() int               { return int(r.receipt.Status) }
-func (r *Receipt) GetPostState() []byte         { return r.receipt.PostState }
-func (r *Receipt) GetCumulativeGasUsed() int64  { return int64(r.receipt.CumulativeGasUsed) }
-func (r *Receipt) GetBloom() *Bloom             { return &Bloom{r.receipt.Bloom} }
-func (r *Receipt) GetLogs() *Logs               { return &Logs{r.receipt.Logs} }
-func (r *Receipt) GetTxHash() *Hash             { return &Hash{r.receipt.TxHash} }
-func (r *Receipt) GetContractAddress() *Address { return &Address{r.receipt.ContractAddress} }
-func (r *Receipt) GetGasUsed() int64            { return int64(r.receipt.GasUsed) }
+func (r *Receipt) GetStatus() int                { return int(r.receipt.Status) }
+func (r *Receipt) GetPostState() []byte          { return r.receipt.PostState }
+func (r *Receipt) GetCumulativeGasUsed() int64   { return int64(r.receipt.CumulativeGasUsed) }
+func (r *Receipt) GetBloom() *Bloom              { return &Bloom{r.receipt.Bloom} }
+func (r *Receipt) GetLogs() *Logs                { return &Logs{r.receipt.Logs} }
+func (r *Receipt) GetTxHash() *Hash              { return &Hash{r.receipt.TxHash} }
+func (r *Receipt) GetContractAddress() *Address  { return &Address{r.receipt.ContractAddress} }
+func (r *Receipt) GetGasUsed() int64             { return int64(r.receipt.GasUsed) }
+func (r *Receipt) GetCumulativeQuotaUsed() int64 { return int64(r.receipt.CumulativeQuotaUsed) }
+func (r *Receipt) GetQuotaUsed() int64           { return int64(r.receipt.QuotaUsed) }

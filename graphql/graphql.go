@@ -395,6 +395,24 @@ func (t *Transaction) CumulativeGasUsed(ctx context.Context) (*Long, error) {
 	return &ret, nil
 }
 
+func (t *Transaction) QuotaUsed(ctx context.Context) (*Long, error) {
+	receipt, err := t.getReceipt(ctx)
+	if err != nil || receipt == nil {
+		return nil, err
+	}
+	ret := Long(receipt.QuotaUsed)
+	return &ret, nil
+}
+
+func (t *Transaction) CumulativeQuotaUsed(ctx context.Context) (*Long, error) {
+	receipt, err := t.getReceipt(ctx)
+	if err != nil || receipt == nil {
+		return nil, err
+	}
+	ret := Long(receipt.CumulativeQuotaUsed)
+	return &ret, nil
+}
+
 func (t *Transaction) CreatedContract(ctx context.Context, args BlockNumberArgs) (*Account, error) {
 	receipt, err := t.getReceipt(ctx)
 	if err != nil || receipt == nil || receipt.ContractAddress == (common.Address{}) {

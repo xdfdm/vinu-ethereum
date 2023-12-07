@@ -16,18 +16,20 @@ var _ = (*receiptMarshaling)(nil)
 // MarshalJSON marshals as JSON.
 func (r Receipt) MarshalJSON() ([]byte, error) {
 	type Receipt struct {
-		Type              hexutil.Uint64 `json:"type,omitempty"`
-		PostState         hexutil.Bytes  `json:"root"`
-		Status            hexutil.Uint64 `json:"status"`
-		CumulativeGasUsed hexutil.Uint64 `json:"cumulativeGasUsed" gencodec:"required"`
-		Bloom             Bloom          `json:"logsBloom"         gencodec:"required"`
-		Logs              []*Log         `json:"logs"              gencodec:"required"`
-		TxHash            common.Hash    `json:"transactionHash" gencodec:"required"`
-		ContractAddress   common.Address `json:"contractAddress"`
-		GasUsed           hexutil.Uint64 `json:"gasUsed" gencodec:"required"`
-		BlockHash         common.Hash    `json:"blockHash,omitempty"`
-		BlockNumber       *hexutil.Big   `json:"blockNumber,omitempty"`
-		TransactionIndex  hexutil.Uint   `json:"transactionIndex"`
+		Type                hexutil.Uint64 `json:"type,omitempty"`
+		PostState           hexutil.Bytes  `json:"root"`
+		Status              hexutil.Uint64 `json:"status"`
+		CumulativeGasUsed   hexutil.Uint64 `json:"cumulativeGasUsed" gencodec:"required"`
+		Bloom               Bloom          `json:"logsBloom"         gencodec:"required"`
+		Logs                []*Log         `json:"logs"              gencodec:"required"`
+		TxHash              common.Hash    `json:"transactionHash" gencodec:"required"`
+		ContractAddress     common.Address `json:"contractAddress"`
+		GasUsed             hexutil.Uint64 `json:"gasUsed" gencodec:"required"`
+		BlockHash           common.Hash    `json:"blockHash,omitempty"`
+		BlockNumber         *hexutil.Big   `json:"blockNumber,omitempty"`
+		TransactionIndex    hexutil.Uint   `json:"transactionIndex"`
+		QuotaUsed           hexutil.Uint64 `json:"quotaUsed" gencodec:"required"`
+		CumulativeQuotaUsed hexutil.Uint64 `json:"cumulativeQuotaUsed" gencodec:"required"`
 	}
 	var enc Receipt
 	enc.Type = hexutil.Uint64(r.Type)
@@ -42,24 +44,28 @@ func (r Receipt) MarshalJSON() ([]byte, error) {
 	enc.BlockHash = r.BlockHash
 	enc.BlockNumber = (*hexutil.Big)(r.BlockNumber)
 	enc.TransactionIndex = hexutil.Uint(r.TransactionIndex)
+	enc.QuotaUsed = hexutil.Uint64(r.QuotaUsed)
+	enc.CumulativeQuotaUsed = hexutil.Uint64(r.CumulativeQuotaUsed)
 	return json.Marshal(&enc)
 }
 
 // UnmarshalJSON unmarshals from JSON.
 func (r *Receipt) UnmarshalJSON(input []byte) error {
 	type Receipt struct {
-		Type              *hexutil.Uint64 `json:"type,omitempty"`
-		PostState         *hexutil.Bytes  `json:"root"`
-		Status            *hexutil.Uint64 `json:"status"`
-		CumulativeGasUsed *hexutil.Uint64 `json:"cumulativeGasUsed" gencodec:"required"`
-		Bloom             *Bloom          `json:"logsBloom"         gencodec:"required"`
-		Logs              []*Log          `json:"logs"              gencodec:"required"`
-		TxHash            *common.Hash    `json:"transactionHash" gencodec:"required"`
-		ContractAddress   *common.Address `json:"contractAddress"`
-		GasUsed           *hexutil.Uint64 `json:"gasUsed" gencodec:"required"`
-		BlockHash         *common.Hash    `json:"blockHash,omitempty"`
-		BlockNumber       *hexutil.Big    `json:"blockNumber,omitempty"`
-		TransactionIndex  *hexutil.Uint   `json:"transactionIndex"`
+		Type                *hexutil.Uint64 `json:"type,omitempty"`
+		PostState           *hexutil.Bytes  `json:"root"`
+		Status              *hexutil.Uint64 `json:"status"`
+		CumulativeGasUsed   *hexutil.Uint64 `json:"cumulativeGasUsed" gencodec:"required"`
+		Bloom               *Bloom          `json:"logsBloom"         gencodec:"required"`
+		Logs                []*Log          `json:"logs"              gencodec:"required"`
+		TxHash              *common.Hash    `json:"transactionHash" gencodec:"required"`
+		ContractAddress     *common.Address `json:"contractAddress"`
+		GasUsed             *hexutil.Uint64 `json:"gasUsed" gencodec:"required"`
+		BlockHash           *common.Hash    `json:"blockHash,omitempty"`
+		BlockNumber         *hexutil.Big    `json:"blockNumber,omitempty"`
+		TransactionIndex    *hexutil.Uint   `json:"transactionIndex"`
+		QuotaUsed           *hexutil.Uint64 `json:"quotaUsed" gencodec:"required"`
+		CumulativeQuotaUsed *hexutil.Uint64 `json:"cumulativeQuotaUsed" gencodec:"required"`
 	}
 	var dec Receipt
 	if err := json.Unmarshal(input, &dec); err != nil {
@@ -106,5 +112,13 @@ func (r *Receipt) UnmarshalJSON(input []byte) error {
 	if dec.TransactionIndex != nil {
 		r.TransactionIndex = uint(*dec.TransactionIndex)
 	}
+	if dec.QuotaUsed == nil {
+		return errors.New("missing required field 'quotaUsed' for Receipt")
+	}
+	r.QuotaUsed = uint64(*dec.QuotaUsed)
+	if dec.CumulativeQuotaUsed == nil {
+		return errors.New("missing required field 'cumulativeQuotaUsed' for Receipt")
+	}
+	r.CumulativeQuotaUsed = uint64(*dec.CumulativeQuotaUsed)
 	return nil
 }

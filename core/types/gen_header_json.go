@@ -32,6 +32,8 @@ func (h Header) MarshalJSON() ([]byte, error) {
 		MixDigest   common.Hash    `json:"mixHash"`
 		Nonce       BlockNonce     `json:"nonce"`
 		BaseFee     *hexutil.Big   `json:"baseFeePerGas" rlp:"optional"`
+		QuotaLimit  uint64         `json:"quotaLimit" gencodec:"required"`
+		QuotaUsed   uint64         `json:"quotaUsed" gencodec:"required"`
 		Hash        common.Hash    `json:"hash"`
 	}
 	var enc Header
@@ -51,6 +53,8 @@ func (h Header) MarshalJSON() ([]byte, error) {
 	enc.MixDigest = h.MixDigest
 	enc.Nonce = h.Nonce
 	enc.BaseFee = (*hexutil.Big)(h.BaseFee)
+	enc.QuotaLimit = h.QuotaLimit
+	enc.QuotaUsed = h.QuotaUsed
 	enc.Hash = h.Hash()
 	return json.Marshal(&enc)
 }
@@ -74,6 +78,8 @@ func (h *Header) UnmarshalJSON(input []byte) error {
 		MixDigest   *common.Hash    `json:"mixHash"`
 		Nonce       *BlockNonce     `json:"nonce"`
 		BaseFee     *hexutil.Big    `json:"baseFeePerGas" rlp:"optional"`
+		QuotaLimit  *uint64         `json:"quotaLimit" gencodec:"required"`
+		QuotaUsed   *uint64         `json:"quotaUsed" gencodec:"required"`
 	}
 	var dec Header
 	if err := json.Unmarshal(input, &dec); err != nil {
@@ -140,5 +146,13 @@ func (h *Header) UnmarshalJSON(input []byte) error {
 	if dec.BaseFee != nil {
 		h.BaseFee = (*big.Int)(dec.BaseFee)
 	}
+	if dec.QuotaLimit == nil {
+		return errors.New("missing required field 'quotaLimit' for Header")
+	}
+	h.QuotaLimit = *dec.QuotaLimit
+	if dec.QuotaUsed == nil {
+		return errors.New("missing required field 'quotaUsed' for Header")
+	}
+	h.QuotaUsed = *dec.QuotaUsed
 	return nil
 }
