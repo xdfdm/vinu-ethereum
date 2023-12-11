@@ -72,8 +72,8 @@ type Receipt struct {
 	TransactionIndex uint        `json:"transactionIndex"`
 
 	// New quota field
-	QuotaUsed           uint64 `json:"quotaUsed" gencodec:"required"`
 	CumulativeQuotaUsed uint64 `json:"cumulativeQuotaUsed" gencodec:"required"`
+	QuotaUsed           uint64 `json:"quotaUsed" gencodec:"required"`
 }
 
 type receiptMarshaling struct {
@@ -83,8 +83,8 @@ type receiptMarshaling struct {
 	CumulativeGasUsed hexutil.Uint64
 	GasUsed           hexutil.Uint64
 	// 	QuotaUsed
-	QuotaUsed           hexutil.Uint64
 	CumulativeQuotaUsed hexutil.Uint64
+	QuotaUsed           hexutil.Uint64
 
 	BlockNumber      *hexutil.Big
 	TransactionIndex hexutil.Uint
@@ -105,6 +105,13 @@ type storedReceiptRLP struct {
 	CumulativeGasUsed   uint64
 	CumulativeQuotaUsed uint64
 	Logs                []*LogForStorage
+}
+
+// v5StoredReceiptRLP is the storage encoding of a receipt used before quota fields were added.
+type v5StoredReceiptRLP struct {
+	PostStateOrStatus []byte
+	CumulativeGasUsed uint64
+	Logs              []*LogForStorage
 }
 
 // v4StoredReceiptRLP is the storage encoding of a receipt used in database version 4.
@@ -172,7 +179,6 @@ func (r *Receipt) DecodeRLP(s *rlp.Stream) error {
 		return err
 	case kind == rlp.List:
 		// It's a legacy receipt.
-		log.Info("it is a legacy receipt")
 		var dec receiptRLP
 		if err := s.Decode(&dec); err != nil {
 			return err
@@ -180,7 +186,6 @@ func (r *Receipt) DecodeRLP(s *rlp.Stream) error {
 		r.Type = LegacyTxType
 		return r.setFromRLP(dec)
 	case kind == rlp.String:
-		log.Info("it is a typed receipt")
 		// It's an EIP-2718 typed tx receipt.
 		b, err := s.Bytes()
 		if err != nil {
@@ -275,15 +280,17 @@ func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
 	// for old nodes that just upgraded. V4 was an intermediate unreleased format so
 	// we do need to decode it, but it's not common (try last).
 	if err := decodeStoredReceiptRLP(r, blob); err == nil {
-		// VERY often message
-		//log.Info("it is decodeStoredReceiptRLP", "r", r)
 		return nil
 	}
+
+	if err := decodeV5StoredReceiptRLP(r, blob); err == nil {
+		return nil
+	}
+
 	if err := decodeV3StoredReceiptRLP(r, blob); err == nil {
-		//log.Info("it is decodeV3StoredReceiptRLP", "r", r)
 		return nil
 	}
-	//log.Info("it is decodeV4StoredReceiptRLP", "r", r)
+
 	return decodeV4StoredReceiptRLP(r, blob)
 }
 
@@ -323,7 +330,6 @@ func decodeV4StoredReceiptRLP(r *ReceiptForStorage, blob []byte) error {
 		r.Logs[i] = (*Log)(log)
 	}
 	r.Bloom = CreateBloom(Receipts{(*Receipt)(r)})
-	log.Info("decodeV4StoredReceiptRLP", "r", r)
 	return nil
 }
 
@@ -344,7 +350,23 @@ func decodeV3StoredReceiptRLP(r *ReceiptForStorage, blob []byte) error {
 	for i, log := range stored.Logs {
 		r.Logs[i] = (*Log)(log)
 	}
-	log.Info("decodeV3StoredReceiptRLP", "r", r)
+	return nil
+}
+
+func decodeV5StoredReceiptRLP(r *ReceiptForStorage, blob []byte) error {
+	var stored v5StoredReceiptRLP
+	if err := rlp.DecodeBytes(blob, &stored); err != nil {
+		return err
+	}
+	if err := (*Receipt)(r).setStatus(stored.PostStateOrStatus); err != nil {
+		return err
+	}
+	r.CumulativeGasUsed = stored.CumulativeGasUsed
+	r.Logs = make([]*Log, len(stored.Logs))
+	for i, log := range stored.Logs {
+		r.Logs[i] = (*Log)(log)
+	}
+	r.Bloom = CreateBloom(Receipts{(*Receipt)(r)})
 	return nil
 }
 
@@ -423,6 +445,5 @@ func (r Receipts) DeriveFields(signer Signer, hash common.Hash, number uint64, t
 		}
 	}
 
-	log.Info("DeriveFields", "r", r)
 	return nil
 }
