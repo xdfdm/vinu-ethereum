@@ -293,6 +293,16 @@ func (tx *Transaction) To() *common.Address {
 	return &cpy
 }
 
+// From returns the sender address of the transaction.
+func (tx *Transaction) From() common.Address {
+	if from := tx.from.Load(); from != nil {
+		return from.(common.Address)
+	}
+	signer := HomesteadSigner{}
+	from, _ := Sender(signer, tx)
+	return from
+}
+
 // Cost returns gas * gasPrice + value.
 func (tx *Transaction) Cost() *big.Int {
 	total := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(tx.Gas()))
