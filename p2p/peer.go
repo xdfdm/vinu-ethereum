@@ -354,6 +354,9 @@ func (p *Peer) handle(msg Msg) error {
 }
 
 func countMatchingProtocols(protocols []Protocol, caps []Cap) int {
+	fmt.Println("countMatchingProtocols")
+	fmt.Println("protocols:", protocols)
+	fmt.Println("caps:", caps)
 	n := 0
 	for _, cap := range caps {
 		for _, proto := range protocols {

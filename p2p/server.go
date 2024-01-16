@@ -838,6 +838,8 @@ func (srv *Server) postHandshakeChecks(peers map[enode.ID]*Peer, inboundCount in
 	switch {
 	case discfilter.BannedDynamic(c.node.ID()):
 		// ignore the peer if it is already banned
+		log.Debug("Dropping banned peer", "peer", c, "node_id", c.node.ID())
+		log.Debug("discfilter", "banned", discfilter.GetBanned())
 		return DiscBanned
 	case !c.is(trustedConn) && len(peers) >= srv.MaxPeers:
 		return DiscTooManyPeers
