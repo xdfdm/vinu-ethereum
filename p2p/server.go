@@ -859,6 +859,8 @@ func (srv *Server) postHandshakeChecks(peers map[enode.ID]*Peer, inboundCount in
 func (srv *Server) addPeerChecks(peers map[enode.ID]*Peer, inboundCount int, c *conn) error {
 	// Drop connections and ban the peer with no matching protocols.
 	if len(srv.Protocols) > 0 && countMatchingProtocols(srv.Protocols, c.caps) == 0 {
+		log.Debug("Dropping peer with no matching protocols", "peer", c, "caps", c.caps, "len(Protocols)", len(srv.Protocols), "Protocols", srv.Protocols, "countMatchingProtocols", countMatchingProtocols(srv.Protocols, c.caps))
+		log.Debug("Ban node with no matching protocols", "node", c.node.String(), "node_id", c.node.ID())
 		discfilter.Ban(c.node.ID())
 		return DiscBanned
 	}
