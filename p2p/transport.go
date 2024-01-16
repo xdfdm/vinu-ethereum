@@ -156,9 +156,11 @@ func (t *rlpxTransport) doProtoHandshake(our *protoHandshake) (their *protoHands
 func readProtocolHandshake(rw MsgReader) (*protoHandshake, error) {
 	msg, err := rw.ReadMsg()
 	if err != nil {
+		log.Info("Protocol handshake failed (ReadMsg)", "err", err)
 		return nil, err
 	}
 	if msg.Size > baseProtocolMaxMsgSize {
+		log.Info("Protocol handshake failed (message too big)", "size", msg.Size)
 		return nil, fmt.Errorf("message too big")
 	}
 	if msg.Code == discMsg {
@@ -168,6 +170,7 @@ func readProtocolHandshake(rw MsgReader) (*protoHandshake, error) {
 		// back otherwise. Wrap it in a string instead.
 		var reason [1]DiscReason
 		rlp.Decode(msg.Payload, &reason)
+		log.Info("Protocol handshake failed (discMsg)", "reason", reason[0])
 		return nil, reason[0]
 	}
 	if msg.Code != handshakeMsg {
@@ -175,9 +178,11 @@ func readProtocolHandshake(rw MsgReader) (*protoHandshake, error) {
 	}
 	var hs protoHandshake
 	if err := msg.Decode(&hs); err != nil {
+		log.Info("Protocol handshake failed (Decode)", "err", err)
 		return nil, err
 	}
 	if len(hs.ID) != 64 || !bitutil.TestBytes(hs.ID) {
+		log.Info("Protocol handshake failed (invalid ID)", "id", hs.ID)
 		return nil, DiscInvalidIdentity
 	}
 	return &hs, nil
