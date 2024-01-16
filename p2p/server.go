@@ -1024,6 +1024,7 @@ func (srv *Server) setupConn(c *conn, flags connFlag, dialDest *enode.Node) erro
 	// Run the capability negotiation handshake.
 	phs, err := c.doProtoHandshake(srv.ourHandshake)
 	if err != nil {
+		log.Info("Failed p2p handshake (log)", "err", err)
 		clog.Trace("Failed p2p handshake", "err", err)
 		return err
 	}
