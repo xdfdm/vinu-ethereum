@@ -1,10 +1,9 @@
 package discfilter
 
 import (
-	"fmt"
-
 	lru "github.com/hashicorp/golang-lru"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/enr"
 )
@@ -19,7 +18,7 @@ func Enable() {
 }
 
 func Ban(id enode.ID) {
-	fmt.Println("Banning", id)
+	log.Info("Banning", "id", id)
 	if enabled {
 		dynamic.Add(id, struct{}{})
 	}
