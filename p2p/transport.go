@@ -133,10 +133,6 @@ func (t *rlpxTransport) doEncHandshake(prv *ecdsa.PrivateKey) (*ecdsa.PublicKey,
 }
 
 func (t *rlpxTransport) doProtoHandshake(our *protoHandshake) (their *protoHandshake, err error) {
-
-	log.Info("Doing protocol handshake", "our", our)
-	fmt.Println("Doing protocol handshake", "our", our)
-
 	// Writing our handshake happens concurrently, we prefer
 	// returning the handshake read error. If the remote side
 	// disconnects us early with a valid reason, we should return it
@@ -144,6 +140,7 @@ func (t *rlpxTransport) doProtoHandshake(our *protoHandshake) (their *protoHands
 	werr := make(chan error, 1)
 	go func() { werr <- Send(t, handshakeMsg, our) }()
 	if their, err = readProtocolHandshake(t); err != nil {
+		log.Info("Protocol handshake failed (readProtocolHandshake)", "err", err)
 		<-werr // make sure the write terminates too
 		return nil, err
 	}
