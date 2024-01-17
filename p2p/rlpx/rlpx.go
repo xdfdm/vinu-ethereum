@@ -203,8 +203,11 @@ func (h *sessionState) readFrame(conn io.Reader) ([]byte, error) {
 		return nil, errors.New("bad frame MAC")
 	}
 
+	log.Info("rlpx.readFrame()", "frame", common.Bytes2Hex(frame), "len(frame)", len(frame), "fsize", fsize, "rsize", rsize, "header", common.Bytes2Hex(header), "len(header)", len(header), "frameMAC", common.Bytes2Hex(frameMAC), "len(frameMAC)", len(frameMAC), "wantFrameMAC", common.Bytes2Hex(wantFrameMAC), "len(wantFrameMAC)", len(wantFrameMAC), "wantHeaderMAC", common.Bytes2Hex(wantHeaderMAC), "len(wantHeaderMAC)", len(wantHeaderMAC), "header[:16]", common.Bytes2Hex(header[:16]), "len(header[:16])", len(header[:16]), "header[16:]", common.Bytes2Hex(header[16:]), "len(header[16:])", len(header[16:]))
+
 	// Decrypt the frame data.
 	h.dec.XORKeyStream(frame, frame)
+	log.Info("rlpx.readFrame() after XORKeyStream", "frame", common.Bytes2Hex(frame), "len(frame)", len(frame))
 	return frame[:fsize], nil
 }
 
