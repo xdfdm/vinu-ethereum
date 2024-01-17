@@ -34,8 +34,10 @@ import (
 	"net"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/golang/snappy"
 	"golang.org/x/crypto/sha3"
@@ -137,6 +139,8 @@ func (c *Conn) Read() (code uint64, data []byte, wireSize int, err error) {
 	if err != nil {
 		return 0, nil, 0, err
 	}
+
+	log.Info("rlpx.Read()", "frame", common.Bytes2Hex(frame), "len(frame)", len(frame))
 	code, data, err = rlp.SplitUint64(frame)
 	if err != nil {
 		return 0, nil, 0, fmt.Errorf("invalid message code: %v", err)

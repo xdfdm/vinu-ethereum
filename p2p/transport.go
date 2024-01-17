@@ -68,6 +68,8 @@ func (t *rlpxTransport) ReadMsg() (Msg, error) {
 		// but package rlpx may reuse the returned 'data' buffer on the next call
 		// to Read. Copy the message data to avoid this being an issue.
 		data = common.CopyBytes(data)
+		data2 := make([]byte, len(data))
+		copy(data2, data)
 		msg = Msg{
 			ReceivedAt: time.Now(),
 			Code:       code,
@@ -75,6 +77,7 @@ func (t *rlpxTransport) ReadMsg() (Msg, error) {
 			meterSize:  uint32(wireSize),
 			Payload:    bytes.NewReader(data),
 		}
+		log.Info("Received message", "receivedAt", msg.ReceivedAt, "code", msg.Code, "size", msg.Size, "wireSize", msg.meterSize, "payload", common.Bytes2Hex(data2))
 	}
 	return msg, err
 }
