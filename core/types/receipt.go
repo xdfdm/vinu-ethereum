@@ -374,7 +374,11 @@ func (rs Receipts) Len() int { return len(rs) }
 // EncodeIndex encodes the i'th receipt to w.
 func (rs Receipts) EncodeIndex(i int, w *bytes.Buffer) {
 	r := rs[i]
-	data := &receiptRLP{r.statusEncoding(), r.CumulativeGasUsed, big.NewInt(0).Set(r.FeeRefund), r.Bloom, r.Logs}
+	feeRefund := big.NewInt(0)
+	if r.FeeRefund != nil {
+		feeRefund = feeRefund.Set(r.FeeRefund)
+	}
+	data := &receiptRLP{r.statusEncoding(), r.CumulativeGasUsed, feeRefund, r.Bloom, r.Logs}
 	switch r.Type {
 	case LegacyTxType:
 		rlp.Encode(w, data)
